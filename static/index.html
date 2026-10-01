@@ -4,105 +4,886 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DevOps Command Wiki</title>
+
 <style>
-:root{--bg:#0d1117;--panel:#161b22;--line:#262d36;--txt:#e6edf3;--mut:#8b949e;--acc:#2dd4bf;--warn:#f5a524;--bad:#f85149;
---mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
-*{box-sizing:border-box}html,body{height:100%;margin:0}
-body{background:var(--bg);color:var(--txt);font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;display:flex;flex-direction:column}
-header{display:flex;gap:16px;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
-.logo{font-weight:700;letter-spacing:.3px}.logo span{color:var(--acc)}
-#q{flex:1;max-width:640px;background:var(--bg);border:1px solid var(--line);color:var(--txt);padding:9px 12px;border-radius:8px;font-size:14px;outline:none}
-#q:focus{border-color:var(--acc)}kbd{font:12px var(--mono);border:1px solid var(--line);border-radius:4px;padding:1px 6px;color:var(--mut)}
-main{flex:1;display:grid;grid-template-columns:230px 340px 1fr;min-height:0}
-aside,section{overflow:auto;min-height:0}
-aside{border-right:1px solid var(--line);padding:12px 8px}
-#list{border-right:1px solid var(--line);padding:10px}
-#detail{padding:24px 32px}
-.nav{display:flex;justify-content:space-between;width:100%;background:none;border:0;color:var(--txt);padding:7px 10px;border-radius:6px;cursor:pointer;font-size:14px;text-align:left}
-.nav:hover{background:var(--panel)}.nav.on{background:var(--panel);color:var(--acc)}.nav small{color:var(--mut)}
-.cat{padding-left:22px;color:var(--mut);font-size:13px}
-.card{padding:10px 12px;border:1px solid transparent;border-radius:8px;cursor:pointer}
-.card:hover{background:var(--panel)}.card.on{background:var(--panel);border-color:var(--acc)}
-.card b{font-family:var(--mono);font-size:13px}.card p{margin:2px 0 0;color:var(--mut);font-size:13px}
-.tag{font-size:11px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--mut);margin-left:6px;vertical-align:middle}
-.tag.caution{color:var(--warn);border-color:var(--warn)}.tag.destructive{color:var(--bad);border-color:var(--bad)}
-h1{margin:0 0 4px;font-size:24px;font-family:var(--mono)}h2{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:28px 0 8px}
-.sub{color:var(--mut);margin:0 0 16px}
-.code{display:flex;justify-content:space-between;align-items:center;gap:12px;background:#010409;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:13px;margin:6px 0}
-.code code{white-space:pre-wrap;word-break:break-all;color:var(--acc)}
-.cp{background:var(--panel);color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:3px 10px;cursor:pointer;font-size:12px;flex:none}
-.cp:hover{color:var(--txt)}
-.ex p{margin:0 0 0 2px;color:var(--mut);font-size:13px}
-table{width:100%;border-collapse:collapse}td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-td:first-child{font-family:var(--mono);color:var(--warn);white-space:nowrap;width:1%}
-.chips{display:flex;flex-wrap:wrap;gap:8px}.chip{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:var(--mono);font-size:13px}
-.chip:hover{border-color:var(--acc)}
-.alert{border:1px solid var(--bad);background:#f8514914;color:var(--bad);padding:8px 12px;border-radius:8px;margin:12px 0}
-.empty{color:var(--mut);padding:40px 10px;text-align:center}
-@media(max-width:900px){main{grid-template-columns:1fr}aside{display:none}#list{max-height:40vh;border-right:0;border-bottom:1px solid var(--line)}#detail{padding:16px}}
+:root{
+  --bg:#0d1117;
+  --panel:#161b22;
+  --panel-hover:#1c2128;
+  --line:#262d36;
+  --txt:#e6edf3;
+  --mut:#8b949e;
+  --acc:#326ce5;
+  --acc-hover:#4b7ff0;
+  --warn:#f5a524;
+  --bad:#f85149;
+  --code:#010409;
+
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+
+:root.light{
+  --bg:#f7f3ea;
+  --panel:#fffdf8;
+  --panel-hover:#f1ece2;
+  --line:#ded8cc;
+  --txt:#252a31;
+  --mut:#737981;
+  --acc:#326ce5;
+  --acc-hover:#2459c7;
+  --warn:#a96900;
+  --bad:#d93636;
+  --code:#f0ece4;
+}
+
+*{
+  box-sizing:border-box
+}
+
+html,body{
+  height:100%;
+  margin:0
+}
+
+body{
+  background:var(--bg);
+  color:var(--txt);
+  font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;
+  display:flex;
+  flex-direction:column;
+  transition:
+    background .2s ease,
+    color .2s ease;
+}
+
+header{
+  display:flex;
+  gap:16px;
+  align-items:center;
+  padding:12px 20px;
+  border-bottom:1px solid var(--line);
+  background:var(--panel);
+  transition:
+    background .2s ease,
+    border-color .2s ease;
+}
+
+.logo{
+  font-weight:700;
+  letter-spacing:.3px;
+  white-space:nowrap;
+}
+
+.logo span{
+  color:var(--acc)
+}
+
+#q{
+  flex:1;
+  max-width:640px;
+  background:var(--bg);
+  border:1px solid var(--line);
+  color:var(--txt);
+  padding:9px 12px;
+  border-radius:8px;
+  font-size:14px;
+  outline:none;
+  transition:
+    background .2s ease,
+    border-color .2s ease,
+    color .2s ease;
+}
+
+#q:focus{
+  border-color:var(--acc)
+}
+
+#q::placeholder{
+  color:var(--mut)
+}
+
+kbd{
+  font:12px var(--mono);
+  border:1px solid var(--line);
+  border-radius:4px;
+  padding:1px 6px;
+  color:var(--mut);
+  flex:none;
+}
+
+/* Theme toggle */
+
+#themeToggle{
+  width:36px;
+  height:36px;
+  flex:none;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:var(--bg);
+  border:1px solid var(--line);
+  border-radius:8px;
+  color:var(--txt);
+  cursor:pointer;
+  font-size:16px;
+  transition:
+    background .2s ease,
+    border-color .2s ease,
+    color .2s ease,
+    transform .15s ease;
+}
+
+#themeToggle:hover{
+  border-color:var(--acc);
+  color:var(--acc);
+}
+
+#themeToggle:active{
+  transform:scale(.94);
+}
+
+main{
+  flex:1;
+  display:grid;
+  grid-template-columns:230px 340px 1fr;
+  min-height:0
+}
+
+aside,section{
+  overflow:auto;
+  min-height:0
+}
+
+aside{
+  border-right:1px solid var(--line);
+  padding:12px 8px
+}
+
+#list{
+  border-right:1px solid var(--line);
+  padding:10px
+}
+
+#detail{
+  padding:24px 32px
+}
+
+.nav{
+  display:flex;
+  justify-content:space-between;
+  width:100%;
+  background:none;
+  border:0;
+  color:var(--txt);
+  padding:7px 10px;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:14px;
+  text-align:left;
+  transition:
+    background .15s ease,
+    color .15s ease;
+}
+
+.nav:hover{
+  background:var(--panel-hover)
+}
+
+.nav.on{
+  background:var(--panel-hover);
+  color:var(--acc)
+}
+
+.nav small{
+  color:var(--mut)
+}
+
+.cat{
+  padding-left:22px;
+  color:var(--mut);
+  font-size:13px
+}
+
+.card{
+  padding:10px 12px;
+  border:1px solid transparent;
+  border-radius:8px;
+  cursor:pointer;
+  transition:
+    background .15s ease,
+    border-color .15s ease;
+}
+
+.card:hover{
+  background:var(--panel-hover)
+}
+
+.card.on{
+  background:var(--panel-hover);
+  border-color:var(--acc)
+}
+
+.card b{
+  font-family:var(--mono);
+  font-size:13px
+}
+
+.card p{
+  margin:2px 0 0;
+  color:var(--mut);
+  font-size:13px
+}
+
+.tag{
+  font-size:11px;
+  padding:1px 7px;
+  border-radius:99px;
+  border:1px solid var(--line);
+  color:var(--mut);
+  margin-left:6px;
+  vertical-align:middle
+}
+
+.tag.caution{
+  color:var(--warn);
+  border-color:var(--warn)
+}
+
+.tag.destructive{
+  color:var(--bad);
+  border-color:var(--bad)
+}
+
+h1{
+  margin:0 0 4px;
+  font-size:24px;
+  font-family:var(--mono)
+}
+
+h2{
+  font-size:12px;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  color:var(--mut);
+  margin:28px 0 8px
+}
+
+.sub{
+  color:var(--mut);
+  margin:0 0 16px
+}
+
+.code{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:12px;
+  background:var(--code);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:10px 14px;
+  font-family:var(--mono);
+  font-size:13px;
+  margin:6px 0;
+  transition:
+    background .2s ease,
+    border-color .2s ease;
+}
+
+.code code{
+  white-space:pre-wrap;
+  word-break:break-all;
+  color:var(--acc)
+}
+
+.cp{
+  background:var(--panel);
+  color:var(--mut);
+  border:1px solid var(--line);
+  border-radius:6px;
+  padding:3px 10px;
+  cursor:pointer;
+  font-size:12px;
+  flex:none;
+  transition:
+    background .15s ease,
+    color .15s ease,
+    border-color .15s ease;
+}
+
+.cp:hover{
+  color:var(--txt);
+  border-color:var(--acc);
+}
+
+.ex p{
+  margin:0 0 0 2px;
+  color:var(--mut);
+  font-size:13px
+}
+
+table{
+  width:100%;
+  border-collapse:collapse
+}
+
+td{
+  padding:8px 10px;
+  border-bottom:1px solid var(--line);
+  vertical-align:top
+}
+
+td:first-child{
+  font-family:var(--mono);
+  color:var(--warn);
+  white-space:nowrap;
+  width:1%
+}
+
+.chips{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px
+}
+
+.chip{
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:6px 12px;
+  cursor:pointer;
+  font-family:var(--mono);
+  font-size:13px;
+  transition:
+    background .15s ease,
+    border-color .15s ease;
+}
+
+.chip:hover{
+  border-color:var(--acc);
+  background:var(--panel-hover);
+}
+
+.alert{
+  border:1px solid var(--bad);
+  background:#f8514914;
+  color:var(--bad);
+  padding:8px 12px;
+  border-radius:8px;
+  margin:12px 0
+}
+
+.empty{
+  color:var(--mut);
+  padding:40px 10px;
+  text-align:center
+}
+
+@media(max-width:900px){
+  main{
+    grid-template-columns:1fr
+  }
+
+  aside{
+    display:none
+  }
+
+  #list{
+    max-height:40vh;
+    border-right:0;
+    border-bottom:1px solid var(--line)
+  }
+
+  #detail{
+    padding:16px
+  }
+}
+
+@media(max-width:600px){
+  header{
+    gap:10px;
+    padding:10px 12px;
+  }
+
+  .logo{
+    font-size:13px;
+  }
+
+  #q{
+    min-width:0;
+  }
+
+  kbd{
+    display:none;
+  }
+
+  #themeToggle{
+    width:34px;
+    height:34px;
+  }
+}
 </style>
 </head>
+
 <body>
+
 <header>
   <div class="logo">DevOps<span>Wiki</span></div>
-  <input id="q" placeholder="Search for a command, a flag or an issue…  (e.g. rollback, pod log, --atomic)" autocomplete="off">
-  <kbd>/</kbd>
+
+  <input
+    id="q"
+    placeholder="Search for a command, a flag or an issue…  (e.g. rollback, pod log, --atomic)"
+    autocomplete="off"
+  >
+
+  <button
+    id="themeToggle"
+    type="button"
+    aria-label="Switch theme"
+    title="Switch theme"
+  >☀</button>
 </header>
+
 <main>
   <aside id="nav"></aside>
+
   <section id="list"></section>
-  <section id="detail"><div class="empty">Select a command to view its details.</div></section>
+
+  <section id="detail">
+    <div class="empty">Select a command to view its details.</div>
+  </section>
 </main>
+
 <script>
 const $=s=>document.querySelector(s);
-const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-let tools=[],sel={tool:null,cat:null},cur=null,timer;
 
-async function api(u){const r=await fetch(u);if(r.status===429)throw new Error('Too many requests, please try again in a few seconds.');if(!r.ok)throw new Error('Error '+r.status);return r.json()}
+const esc=s=>String(s??'').replace(
+  /[&<>"]/g,
+  c=>({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;'
+  }[c])
+);
+
+let tools=[],
+    sel={tool:null,cat:null},
+    cur=null,
+    timer;
+
+
+/* -------------------------------------------------------
+   Theme
+------------------------------------------------------- */
+
+function setTheme(theme){
+  const light=theme==='light';
+
+  document.documentElement.classList.toggle('light',light);
+
+  $('#themeToggle').textContent=light?'☾':'☀';
+
+  $('#themeToggle').setAttribute(
+    'aria-label',
+    light?'Switch to dark mode':'Switch to light mode'
+  );
+
+  $('#themeToggle').setAttribute(
+    'title',
+    light?'Switch to dark mode':'Switch to light mode'
+  );
+
+  localStorage.setItem('devopswiki-theme',theme);
+}
+
+function initTheme(){
+  const saved=localStorage.getItem('devopswiki-theme');
+
+  if(saved==='light'||saved==='dark'){
+    setTheme(saved);
+    return;
+  }
+
+  /*
+   * Dark mode remains the default, but if the user has
+   * never selected a theme we respect the operating system.
+   */
+  const prefersLight=window.matchMedia &&
+    window.matchMedia('(prefers-color-scheme: light)').matches;
+
+  setTheme(prefersLight?'light':'dark');
+}
+
+$('#themeToggle').addEventListener('click',()=>{
+  const isLight=document.documentElement.classList.contains('light');
+  setTheme(isLight?'dark':'light');
+});
+
+
+/* -------------------------------------------------------
+   API
+------------------------------------------------------- */
+
+async function api(u){
+  const r=await fetch(u);
+
+  if(r.status===429){
+    throw new Error(
+      'Too many requests, please try again in a few seconds.'
+    );
+  }
+
+  if(!r.ok){
+    throw new Error('Error '+r.status);
+  }
+
+  return r.json();
+}
+
+
+/* -------------------------------------------------------
+   Navigation
+------------------------------------------------------- */
 
 function renderNav(){
-  $('#nav').innerHTML=`<button class="nav ${!sel.tool?'on':''}" data-t="">All commands</button>`+tools.map(t=>
-    `<button class="nav ${sel.tool===t.tool&&!sel.cat?'on':''}" data-t="${esc(t.tool)}"><span>${esc(t.tool)}</span><small>${t.count}</small></button>`+
-    (sel.tool===t.tool?Object.entries(t.categories).map(([c,n])=>
-      `<button class="nav cat ${sel.cat===c?'on':''}" data-t="${esc(t.tool)}" data-c="${esc(c)}"><span>${esc(c)}</span><small>${n}</small></button>`).join(''):'')).join('');
+  $('#nav').innerHTML=
+    `<button class="nav ${!sel.tool?'on':''}" data-t="">
+      All commands
+    </button>`+
+
+    tools.map(t=>
+      `<button
+        class="nav ${sel.tool===t.tool&&!sel.cat?'on':''}"
+        data-t="${esc(t.tool)}"
+      >
+        <span>${esc(t.tool)}</span>
+        <small>${t.count}</small>
+      </button>`+
+
+      (
+        sel.tool===t.tool
+        ?
+        Object.entries(t.categories).map(([c,n])=>
+          `<button
+            class="nav cat ${sel.cat===c?'on':''}"
+            data-t="${esc(t.tool)}"
+            data-c="${esc(c)}"
+          >
+            <span>${esc(c)}</span>
+            <small>${n}</small>
+          </button>`
+        ).join('')
+        :
+        ''
+      )
+    ).join('');
 }
+
+
+/* -------------------------------------------------------
+   Command list
+------------------------------------------------------- */
+
 function renderList(items,msg){
-  $('#list').innerHTML=items.length?items.map(c=>`<div class="card ${cur===c.id?'on':''}" data-id="${esc(c.id)}">
-    <b>${esc(c.name)}</b>${c.danger!=='none'?`<span class="tag ${c.danger}">${c.danger==='destructive'?'destructive':'warning'}</span>`:''}
-    <span class="tag">${esc(c.tool)}</span><p>${esc(c.summary)}</p></div>`).join(''):`<div class="empty">${msg||'No results found.'}</div>`;
+  $('#list').innerHTML=items.length
+    ?
+    items.map(c=>
+      `<div
+        class="card ${cur===c.id?'on':''}"
+        data-id="${esc(c.id)}"
+      >
+        <b>${esc(c.name)}</b>${
+          c.danger!=='none'
+            ?
+            `<span class="tag ${c.danger}">
+              ${c.danger==='destructive'?'destructive':'warning'}
+            </span>`
+            :
+            ''
+        }
+
+        <span class="tag">${esc(c.tool)}</span>
+
+        <p>${esc(c.summary)}</p>
+      </div>`
+    ).join('')
+
+    :
+
+    `<div class="empty">
+      ${msg||'No results found.'}
+    </div>`;
 }
+
+
+/* -------------------------------------------------------
+   Refresh
+------------------------------------------------------- */
+
 async function refresh(){
-  const q=$('#q').value.trim();const p=new URLSearchParams();
-  if(sel.tool)p.set('tool',sel.tool);if(sel.cat)p.set('category',sel.cat);
+  const q=$('#q').value.trim();
+  const p=new URLSearchParams();
+
+  if(sel.tool)p.set('tool',sel.tool);
+  if(sel.cat)p.set('category',sel.cat);
+
   try{
-    if(q){p.set('q',q);renderList(await api('/api/search?'+p),'No results found for “'+esc(q)+'”.')}
-    else renderList(await api('/api/commands?'+p));
-  }catch(e){$('#list').innerHTML=`<div class="empty">${esc(e.message)}</div>`}
+
+    if(q){
+      p.set('q',q);
+
+      renderList(
+        await api('/api/search?'+p),
+        'No results found for “'+esc(q)+'”.'
+      );
+
+    }else{
+
+      renderList(
+        await api('/api/commands?'+p)
+      );
+
+    }
+
+  }catch(e){
+
+    $('#list').innerHTML=
+      `<div class="empty">${esc(e.message)}</div>`;
+
+  }
 }
+
+
+/* -------------------------------------------------------
+   Command detail
+------------------------------------------------------- */
+
 async function show(id){
-  cur=id;location.hash=id;
+
+  cur=id;
+  location.hash=id;
+
   try{
-  const c=await api('/api/commands/'+encodeURIComponent(id));
-  const code=t=>`<div class="code"><code>${esc(t)}</code><button class="cp" data-copy="${esc(t)}">Copy</button></div>`;
-  $('#detail').innerHTML=`<h1>${esc(c.name)}</h1>
-   <p class="sub"><span class="tag">${esc(c.tool)}</span><span class="tag">${esc(c.category)}</span>${c.danger!=='none'?`<span class="tag ${c.danger}">${c.danger}</span>`:''}</p>
-   <p>${esc(c.summary)}</p>${c.description?`<p class="sub">${esc(c.description)}</p>`:''}
-   ${c.danger==='destructive'?'<div class="alert">Destructive command: verify context and namespace/environment before executing.</div>':''}
-   <h2>Syntax</h2>${code(c.syntax)}
-   ${c.flags.length?`<h2>Flags</h2><table>${c.flags.map(f=>`<tr><td>${esc(f.flag)}</td><td>${esc(f.description)}</td></tr>`).join('')}</table>`:''}
-   ${c.examples.length?`<h2>Examples</h2>${c.examples.map(e=>`<div class="ex">${code(e.cmd)}<p>${esc(e.description)}</p></div>`).join('')}`:''}
-   ${c.related_commands.length?`<h2>Related commands</h2><div class="chips">${c.related_commands.map(r=>`<span class="chip" data-id="${esc(r.id)}">${esc(r.name)}</span>`).join('')}</div>`:''}`;
-  document.querySelectorAll('.card').forEach(e=>e.classList.toggle('on',e.dataset.id===id));
-  }catch(e){$('#detail').innerHTML=`<div class="empty">${esc(e.message)}</div>`}
+
+    const c=await api(
+      '/api/commands/'+encodeURIComponent(id)
+    );
+
+    const code=t=>
+      `<div class="code">
+        <code>${esc(t)}</code>
+        <button
+          class="cp"
+          data-copy="${esc(t)}"
+        >Copy</button>
+      </div>`;
+
+    $('#detail').innerHTML=
+      `<h1>${esc(c.name)}</h1>
+
+       <p class="sub">
+         <span class="tag">${esc(c.tool)}</span>
+         <span class="tag">${esc(c.category)}</span>
+
+         ${
+           c.danger!=='none'
+             ?
+             `<span class="tag ${c.danger}">
+               ${c.danger}
+             </span>`
+             :
+             ''
+         }
+       </p>
+
+       <p>${esc(c.summary)}</p>
+
+       ${
+         c.description
+           ?
+           `<p class="sub">
+             ${esc(c.description)}
+           </p>`
+           :
+           ''
+       }
+
+       ${
+         c.danger==='destructive'
+           ?
+           `<div class="alert">
+             Destructive command: verify context and namespace/environment before executing.
+           </div>`
+           :
+           ''
+       }
+
+       <h2>Syntax</h2>
+       ${code(c.syntax)}
+
+       ${
+         c.flags.length
+           ?
+           `<h2>Flags</h2>
+            <table>
+              ${
+                c.flags.map(f=>
+                  `<tr>
+                    <td>${esc(f.flag)}</td>
+                    <td>${esc(f.description)}</td>
+                  </tr>`
+                ).join('')
+              }
+            </table>`
+           :
+           ''
+       }
+
+       ${
+         c.examples.length
+           ?
+           `<h2>Examples</h2>
+            ${
+              c.examples.map(e=>
+                `<div class="ex">
+                  ${code(e.cmd)}
+                  <p>${esc(e.description)}</p>
+                </div>`
+              ).join('')
+            }`
+           :
+           ''
+       }
+
+       ${
+         c.related_commands.length
+           ?
+           `<h2>Related commands</h2>
+            <div class="chips">
+              ${
+                c.related_commands.map(r=>
+                  `<span
+                    class="chip"
+                    data-id="${esc(r.id)}"
+                  >${esc(r.name)}</span>`
+                ).join('')
+              }
+            </div>`
+           :
+           ''
+       }`;
+
+    document
+      .querySelectorAll('.card')
+      .forEach(e=>
+        e.classList.toggle(
+          'on',
+          e.dataset.id===id
+        )
+      );
+
+  }catch(e){
+
+    $('#detail').innerHTML=
+      `<div class="empty">${esc(e.message)}</div>`;
+
+  }
 }
+
+
+/* -------------------------------------------------------
+   Events
+------------------------------------------------------- */
+
 document.addEventListener('click',e=>{
-  const n=e.target.closest('.nav');if(n){sel={tool:n.dataset.t||null,cat:n.dataset.c||null};renderNav();refresh();return}
-  const i=e.target.closest('[data-id]');if(i){show(i.dataset.id);return}
-  const c=e.target.closest('.cp');if(c){navigator.clipboard.writeText(c.dataset.copy);c.textContent='Copied ✓';setTimeout(()=>c.textContent='Copy',1200)}
+
+  const n=e.target.closest('.nav');
+
+  if(n){
+    sel={
+      tool:n.dataset.t||null,
+      cat:n.dataset.c||null
+    };
+
+    renderNav();
+    refresh();
+    return;
+  }
+
+  const i=e.target.closest('[data-id]');
+
+  if(i){
+    show(i.dataset.id);
+    return;
+  }
+
+  const c=e.target.closest('.cp');
+
+  if(c){
+    navigator.clipboard.writeText(c.dataset.copy);
+
+    c.textContent='Copied ✓';
+
+    setTimeout(
+      ()=>c.textContent='Copy',
+      1200
+    );
+  }
+
 });
-$('#q').addEventListener('input',()=>{clearTimeout(timer);timer=setTimeout(refresh,200)});
-document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement!==$('#q')){e.preventDefault();$('#q').focus()}});
-(async()=>{try{tools=await api('/api/tools');renderNav();await refresh();if(location.hash.length>1)show(decodeURIComponent(location.hash.slice(1)))}catch(e){$('#list').innerHTML=`<div class="empty">${esc(e.message)}</div>`}})();
+
+
+$('#q').addEventListener('input',()=>{
+  clearTimeout(timer);
+  timer=setTimeout(refresh,200);
+});
+
+
+document.addEventListener('keydown',e=>{
+  if(
+    e.key==='/' &&
+    document.activeElement!==$('#q')
+  ){
+    e.preventDefault();
+    $('#q').focus();
+  }
+});
+
+
+/* -------------------------------------------------------
+   Init
+------------------------------------------------------- */
+
+(async()=>{
+
+  initTheme();
+
+  try{
+
+    tools=await api('/api/tools');
+
+    renderNav();
+
+    await refresh();
+
+    if(location.hash.length>1){
+      show(
+        decodeURIComponent(
+          location.hash.slice(1)
+        )
+      );
+    }
+
+  }catch(e){
+
+    $('#list').innerHTML=
+      `<div class="empty">${esc(e.message)}</div>`;
+
+  }
+
+})();
 </script>
+
 </body>
 </html>
