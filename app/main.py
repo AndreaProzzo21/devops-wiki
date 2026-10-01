@@ -35,7 +35,7 @@ def list_commands(tool: str | None = None, category: str | None = None):
 def get_command(cmd_id: str):
     cmd = store.get(cmd_id)
     if not cmd:
-        raise HTTPException(404, "Comando non trovato")
+        raise HTTPException(404, "Command not found")
     return cmd
 
 
