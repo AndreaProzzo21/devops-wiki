@@ -745,7 +745,7 @@
   examples:
     - {cmd: "uname -a", description: "Shows kernel, hostname, architecture, and related information"}
   keywords: [kernel version, os info, architecture, system info]
-  related: [linux-lsb_release, linux-hostname]
+  related: [linux-lsb-release, linux-hostname]
 
 - id: linux-hostnamectl
   tool: linux
@@ -1412,7 +1412,7 @@
   keywords: [logged users, sessions, users, uptime, activity]
   related: [linux-uptime, linux-whoami]
 
-- id: linux-lsb_release
+- id: linux-lsb-release
   tool: linux
   category: system
   name: lsb_release
