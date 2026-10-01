@@ -1,0 +1,783 @@
+# ======================= GET / INSPECT =======================
+- id: kubectl-get
+  tool: kubectl
+  category: resources
+  name: kubectl get
+  syntax: kubectl get RESOURCE [NAME] [-n NS] [-o FORMAT] [-l SELECTOR] [--sort-by=FIELD]
+  summary: List any Kubernetes resource, with powerful output formatting
+  description: The universal read command. Resource types accept short names (po, svc, deploy, ds, sts, cm, ing, pvc, ns, no, hpa).
+  flags:
+    - {flag: "-o wide", description: "Extra columns (node, IP, selector, ...)"}
+    - {flag: "-o yaml / json", description: "Full object definition"}
+    - {flag: "-o name", description: "Only resource/name, handy for scripting"}
+    - {flag: "-o jsonpath='{...}'", description: "Extract fields with JSONPath"}
+    - {flag: "-o custom-columns=A:.path,B:.path", description: "Build your own table"}
+    - {flag: "-A, --all-namespaces", description: "Across every namespace"}
+    - {flag: "-l, --selector", description: "Filter by label (app=web,tier!=db)"}
+    - {flag: "--field-selector", description: "Filter by field (status.phase=Running)"}
+    - {flag: "--sort-by", description: "Sort by a JSONPath field"}
+    - {flag: "-w, --watch", description: "Stream changes"}
+    - {flag: "--show-labels", description: "Add a labels column"}
+    - {flag: "--ignore-not-found", description: "Exit 0 when nothing matches, good for scripts"}
+  examples:
+    - {cmd: "kubectl get deploy,svc,ing -n prod", description: "Several resource types at once"}
+    - {cmd: "kubectl get pods -A --field-selector=status.phase!=Running", description: "Everything not running, cluster-wide"}
+    - {cmd: "kubectl get pods --sort-by=.status.containerStatuses[0].restartCount", description: "Most restarts last"}
+    - {cmd: "kubectl get pods -o custom-columns=NAME:.metadata.name,NODE:.spec.nodeName,IP:.status.podIP", description: "Custom table"}
+    - {cmd: "kubectl get secret db-creds -o jsonpath='{.data.password}' | base64 -d", description: "Decode a secret value"}
+    - {cmd: "kubectl get nodes -o jsonpath='{.items[*].status.addresses[?(@.type==\"InternalIP\")].address}'", description: "All node internal IPs"}
+    - {cmd: "kubectl get pod web-7d4f -o yaml", description: "Full live manifest of one pod"}
+  keywords: [list resources, get resources, show objects, output format, jsonpath, custom columns, short names, query cluster]
+  related: [kubectl-get-pods, kubectl-describe, kubectl-api-resources, kubectl-explain, kubectl-get-events]
+
+- id: kubectl-get-pods
+  tool: kubectl
+  category: workloads
+  name: kubectl get pods
+  syntax: kubectl get pods [-n NAMESPACE] [-o wide] [-l SELECTOR] [-A]
+  summary: List pods with status, restarts and age
+  description: Shows READY containers, STATUS (Running, Pending, CrashLoopBackOff, ...), restarts and age. Use -A to cover every namespace.
+  flags:
+    - {flag: "-n, --namespace", description: "Namespace to query"}
+    - {flag: "-A, --all-namespaces", description: "All namespaces"}
+    - {flag: "-o wide", description: "Show node and pod IP"}
+    - {flag: "-l, --selector", description: "Filter by label"}
+    - {flag: "--field-selector", description: "e.g. spec.nodeName=node-1 or status.phase=Failed"}
+    - {flag: "-w, --watch", description: "Stream updates"}
+    - {flag: "--show-labels", description: "Show labels"}
+    - {flag: "--sort-by", description: "Sort by a field"}
+  examples:
+    - {cmd: "kubectl get pods -A -o wide", description: "All pods with node and IP"}
+    - {cmd: "kubectl get pods -l app=web -w", description: "Watch pods with label app=web"}
+    - {cmd: "kubectl get pods -A --field-selector=status.phase!=Running,status.phase!=Succeeded", description: "Find unhealthy pods"}
+    - {cmd: "kubectl get pods --field-selector spec.nodeName=node-1 -A", description: "Everything scheduled on one node"}
+    - {cmd: "kubectl get pods -o jsonpath='{.items[*].metadata.name}'", description: "Names only, space separated"}
+  keywords: [list pods, show pods, pod status, running pods, k8s, containers, pod list, find pods]
+  related: [kubectl-describe-pod, kubectl-logs, kubectl-delete-pod, kubectl-top, kubectl-get]
+
+- id: kubectl-get-nodes
+  tool: kubectl
+  category: nodes
+  name: kubectl get nodes
+  syntax: kubectl get nodes [-o wide] [-l LABEL] [--show-labels]
+  summary: List cluster nodes with status, roles, version and IPs
+  flags:
+    - {flag: "-o wide", description: "OS image, kernel, container runtime, internal and external IP"}
+    - {flag: "-l", description: "Filter by label (e.g. node-role.kubernetes.io/worker)"}
+    - {flag: "--show-labels", description: "Show all labels (zone, instance type, ...)"}
+  examples:
+    - {cmd: "kubectl get nodes -o wide", description: "Overview with versions and IPs"}
+    - {cmd: "kubectl get nodes -L topology.kubernetes.io/zone,node.kubernetes.io/instance-type", description: "Zone and instance type columns"}
+    - {cmd: "kubectl get nodes --no-headers | awk '$2!=\"Ready\"'", description: "Only nodes that are not Ready"}
+  keywords: [list nodes, cluster nodes, node status, notready, workers, masters, control plane, kubelet version]
+  related: [kubectl-describe, kubectl-top, kubectl-cordon, kubectl-drain]
+
+- id: kubectl-describe
+  tool: kubectl
+  category: resources
+  name: kubectl describe
+  syntax: kubectl describe RESOURCE [NAME] [-n NS] [-l SELECTOR]
+  summary: Show detailed state, configuration and recent events of any resource
+  description: The first debugging step for almost everything, read the Events section at the bottom.
+  flags:
+    - {flag: "-n, --namespace", description: "Namespace"}
+    - {flag: "-l, --selector", description: "Describe all matching resources"}
+    - {flag: "-A", description: "All namespaces"}
+  examples:
+    - {cmd: "kubectl describe node node-1", description: "Capacity, allocatable, conditions, taints, allocated resources"}
+    - {cmd: "kubectl describe svc web -n prod", description: "Endpoints, selector and ports of a Service"}
+    - {cmd: "kubectl describe deploy web -n prod", description: "Rollout strategy, replicas and conditions"}
+    - {cmd: "kubectl describe pvc data-db-0 -n prod", description: "Why a claim is Pending"}
+    - {cmd: "kubectl describe ingress web -n prod", description: "Rules, backends and events"}
+  keywords: [describe resource, details, events, debug, inspect object, why failing, diagnostic]
+  related: [kubectl-describe-pod, kubectl-get, kubectl-get-events, kubectl-logs]
+
+- id: kubectl-describe-pod
+  tool: kubectl
+  category: workloads
+  name: kubectl describe pod
+  syntax: kubectl describe pod POD [-n NAMESPACE]
+  summary: Detailed state and events of a pod
+  description: Look at State and Last State (Reason, Exit Code, OOMKilled), Conditions, Mounts, Node, Tolerations and the Events section. It diagnoses CrashLoopBackOff, ImagePullBackOff, Pending and scheduling problems.
+  flags:
+    - {flag: "-n, --namespace", description: "Namespace of the pod"}
+    - {flag: "-l, --selector", description: "Describe all pods matching a label"}
+  examples:
+    - {cmd: "kubectl describe pod web-7d4f -n prod", description: "State, conditions and events"}
+    - {cmd: "kubectl describe pod web-7d4f -n prod | grep -A8 'Last State'", description: "Why the container last terminated"}
+    - {cmd: "kubectl describe pod web-7d4f -n prod | sed -n '/Events:/,$p'", description: "Only the events"}
+  keywords: [debug pod, crashloopbackoff, pod events, diagnose, troubleshooting, oomkilled, exit code, pending pod, why is my pod failing]
+  related: [kubectl-get-pods, kubectl-logs, kubectl-get-events, kubectl-debug]
+
+- id: kubectl-get-events
+  tool: kubectl
+  category: debugging
+  name: kubectl get events
+  syntax: kubectl get events [-A] [--sort-by=.lastTimestamp] [--field-selector=type=Warning] [-w]
+  summary: List cluster events, the fastest way to see what just went wrong
+  description: Events expire after about an hour by default, so check them early.
+  flags:
+    - {flag: "--sort-by=.lastTimestamp", description: "Chronological order (events are unsorted by default)"}
+    - {flag: "--field-selector type=Warning", description: "Only warnings"}
+    - {flag: "--field-selector involvedObject.name=NAME", description: "Events for one object"}
+    - {flag: "-w, --watch", description: "Stream new events live"}
+    - {flag: "-A", description: "All namespaces"}
+  examples:
+    - {cmd: "kubectl get events -n prod --sort-by=.lastTimestamp", description: "Latest events last"}
+    - {cmd: "kubectl get events -A --field-selector type=Warning", description: "Warnings across the cluster"}
+    - {cmd: "kubectl get events -n prod --field-selector involvedObject.name=web-7d4f", description: "Events of one pod"}
+  keywords: [events, warnings, what happened, recent errors, failed scheduling, cluster events, debug]
+  related: [kubectl-describe-pod, kubectl-describe, kubectl-logs]
+
+- id: kubectl-logs
+  tool: kubectl
+  category: workloads
+  name: kubectl logs
+  syntax: kubectl logs POD|TYPE/NAME [-c CONTAINER] [-f] [--tail N] [--since DURATION] [-p]
+  summary: Print the logs of a container
+  flags:
+    - {flag: "-f, --follow", description: "Stream logs"}
+    - {flag: "--tail", description: "Last N lines"}
+    - {flag: "--since, --since-time", description: "Only logs newer than a duration (10m, 2h) or timestamp"}
+    - {flag: "-c, --container", description: "Pick a container in a multi-container pod"}
+    - {flag: "--all-containers", description: "Logs of every container"}
+    - {flag: "-p, --previous", description: "Logs from the previous (crashed) instance"}
+    - {flag: "-l, --selector", description: "Logs from all pods matching a label"}
+    - {flag: "--timestamps", description: "Prefix lines with timestamps"}
+    - {flag: "--prefix", description: "Prefix lines with pod and container name"}
+    - {flag: "--max-log-requests", description: "Concurrent streams when using -l (default 5)"}
+  examples:
+    - {cmd: "kubectl logs -f web-7d4f --tail=100", description: "Last 100 lines, streaming"}
+    - {cmd: "kubectl logs web-7d4f --previous", description: "Why did it crash?"}
+    - {cmd: "kubectl logs deploy/web -n prod --since=15m --all-containers", description: "Log of a Deployment's pod without knowing its name"}
+    - {cmd: "kubectl logs -l app=web --prefix --tail=20 -n prod", description: "Aggregate logs across replicas"}
+    - {cmd: "kubectl logs web-7d4f -c sidecar --timestamps", description: "A specific container with timestamps"}
+  keywords: [logs, pod logs, container logs, stream logs, tail logs, previous logs, crash logs, errors, stdout]
+  related: [kubectl-describe-pod, kubectl-get-pods, kubectl-exec, kubectl-debug]
+
+- id: kubectl-top
+  tool: kubectl
+  category: debugging
+  name: kubectl top
+  syntax: kubectl top pod|node [NAME] [-A] [--containers] [--sort-by=cpu|memory]
+  summary: Show live CPU and memory usage of pods or nodes
+  description: Requires metrics-server to be installed in the cluster.
+  flags:
+    - {flag: "--containers", description: "Break pod usage down per container"}
+    - {flag: "--sort-by", description: "cpu or memory"}
+    - {flag: "-A", description: "All namespaces"}
+    - {flag: "-l", description: "Filter by label"}
+  examples:
+    - {cmd: "kubectl top pods -A --sort-by=memory | head", description: "Biggest memory consumers"}
+    - {cmd: "kubectl top pod web-7d4f --containers", description: "Per-container usage"}
+    - {cmd: "kubectl top nodes", description: "Node saturation at a glance"}
+  keywords: [cpu usage, memory usage, resource usage, metrics, monitoring, hot pods, top, performance, capacity]
+  related: [kubectl-get-nodes, kubectl-describe, kubectl-autoscale]
+
+# ======================= APPLY / CHANGE =======================
+- id: kubectl-apply
+  tool: kubectl
+  category: config
+  name: kubectl apply
+  syntax: kubectl apply -f FILE|DIR|URL [-k DIR] [-n NS] [--dry-run=client|server] [--server-side]
+  summary: Create or update resources declaratively from manifests
+  description: Compares the manifest with the live object and patches the difference. Combine with kubectl diff to review changes first.
+  flags:
+    - {flag: "-f, --filename", description: "File, directory or URL (use - for stdin, -R to recurse)"}
+    - {flag: "-k, --kustomize", description: "Apply a kustomization directory"}
+    - {flag: "--dry-run=client|server", description: "Simulate; server also runs admission and validation"}
+    - {flag: "--server-side", description: "Server-side apply, better for large objects and shared ownership"}
+    - {flag: "--force-conflicts", description: "Take over fields owned by other managers (server-side)"}
+    - {flag: "--prune -l LABEL", description: "Delete resources no longer present in the manifests (use with a label selector)"}
+    - {flag: "--wait", description: "Wait for resources to be ready/deleted"}
+    - {flag: "--validate=strict", description: "Reject unknown or duplicate fields"}
+    - {flag: "--record / --field-manager", description: "Annotate change cause / set the manager name"}
+  examples:
+    - {cmd: "kubectl apply -f deploy.yaml --dry-run=server", description: "Validate against the API without changing anything"}
+    - {cmd: "kubectl apply -k overlays/prod", description: "Deploy a kustomize overlay"}
+    - {cmd: "kubectl apply -f manifests/ -R -n staging", description: "Everything in a directory tree"}
+    - {cmd: "kubectl apply --server-side --force-conflicts -f big-crd.yaml", description: "Large CRDs that exceed the annotation limit"}
+    - {cmd: "kubectl apply -f - <<< \"$(helm template web ./chart)\"", description: "Pipe rendered manifests"}
+  keywords: [deploy, apply manifest, yaml, create resource, update resource, declarative, kustomize, server side apply, gitops]
+  related: [kubectl-diff, kubectl-create, kubectl-rollout-status, kubectl-delete, kubectl-get]
+  danger: caution
+
+- id: kubectl-diff
+  tool: kubectl
+  category: config
+  name: kubectl diff
+  syntax: kubectl diff -f FILE|DIR [-k DIR] [--server-side]
+  summary: Show what kubectl apply would change, without applying
+  description: Exit code 0 means no changes, 1 means differences, greater than 1 is an error, perfect for CI gates.
+  flags:
+    - {flag: "-f, -k", description: "Manifests or kustomization to compare"}
+    - {flag: "--server-side", description: "Diff using server-side apply semantics"}
+    - {flag: "--prune -l LABEL", description: "Include would-be-pruned resources"}
+  examples:
+    - {cmd: "kubectl diff -f deploy.yaml", description: "Review before applying"}
+    - {cmd: "kubectl diff -k overlays/prod || true", description: "Print drift without failing the shell"}
+    - {cmd: "KUBECTL_EXTERNAL_DIFF='diff -u --color' kubectl diff -f deploy.yaml", description: "Use a custom diff tool"}
+  keywords: [preview changes, what will change, dry run, drift, review, compare live vs manifest]
+  related: [kubectl-apply, kubectl-get, kubectl-replace]
+
+- id: kubectl-create
+  tool: kubectl
+  category: config
+  name: kubectl create
+  syntax: kubectl create -f FILE | create RESOURCE NAME [FLAGS] [--dry-run=client -o yaml]
+  summary: Create resources imperatively, or generate YAML skeletons
+  description: Fails if the resource exists. Combine --dry-run=client -o yaml to generate manifests you can edit and commit.
+  flags:
+    - {flag: "--dry-run=client -o yaml", description: "Print the manifest without creating it"}
+    - {flag: "--save-config", description: "Store the config so a later apply works cleanly"}
+    - {flag: "-f", description: "Create from a file"}
+  examples:
+    - {cmd: "kubectl create namespace staging", description: "New namespace"}
+    - {cmd: "kubectl create deployment web --image=nginx:1.27 --replicas=3 --dry-run=client -o yaml > deploy.yaml", description: "Generate a Deployment manifest"}
+    - {cmd: "kubectl create job backup --image=busybox -- /bin/sh -c 'echo ok'", description: "One-off Job"}
+    - {cmd: "kubectl create job manual-run --from=cronjob/nightly-backup", description: "Trigger a CronJob right now"}
+    - {cmd: "kubectl create serviceaccount ci -n prod", description: "Service account"}
+  keywords: [create resource, generate yaml, new deployment, scaffold manifest, imperative, trigger cronjob, namespace]
+  related: [kubectl-apply, kubectl-create-secret, kubectl-create-configmap, kubectl-run]
+
+- id: kubectl-create-secret
+  tool: kubectl
+  category: config
+  name: kubectl create secret
+  syntax: kubectl create secret generic|docker-registry|tls NAME [FLAGS]
+  summary: Create Secrets from literals, files, registry credentials or TLS certs
+  flags:
+    - {flag: "--from-literal=key=value", description: "Inline key/value"}
+    - {flag: "--from-file=[key=]path", description: "Value from a file"}
+    - {flag: "--from-env-file", description: "Many keys from a .env file"}
+    - {flag: "docker-registry --docker-server/--docker-username/--docker-password", description: "Image pull secret"}
+    - {flag: "tls --cert / --key", description: "TLS secret for Ingress"}
+  examples:
+    - {cmd: "kubectl create secret generic db-creds --from-literal=username=app --from-literal=password='S3cr3t!' -n prod", description: "Opaque secret"}
+    - {cmd: "kubectl create secret docker-registry regcred --docker-server=ghcr.io --docker-username=USER --docker-password=$TOKEN -n prod", description: "Pull secret for a private registry"}
+    - {cmd: "kubectl create secret tls web-tls --cert=tls.crt --key=tls.key -n prod", description: "TLS certificate for an Ingress"}
+    - {cmd: "kubectl create secret generic app-env --from-env-file=.env --dry-run=client -o yaml", description: "Generate a manifest from a .env file"}
+  keywords: [create secret, credentials, password, registry secret, imagepullsecret, tls certificate, env file]
+  related: [kubectl-create-configmap, kubectl-get, kubectl-apply]
+  danger: caution
+
+- id: kubectl-create-configmap
+  tool: kubectl
+  category: config
+  name: kubectl create configmap
+  syntax: kubectl create configmap NAME [--from-literal=K=V] [--from-file=PATH] [--from-env-file=FILE]
+  summary: Create a ConfigMap from literals, files or directories
+  examples:
+    - {cmd: "kubectl create configmap app-config --from-literal=LOG_LEVEL=info --from-literal=REGION=eu-west-1", description: "Simple key/values"}
+    - {cmd: "kubectl create configmap nginx-conf --from-file=nginx.conf", description: "Config file, key is the filename"}
+    - {cmd: "kubectl create configmap app-config --from-env-file=app.env --dry-run=client -o yaml | kubectl apply -f -", description: "Idempotent create-or-update"}
+  keywords: [configmap, configuration, settings, environment variables, config file, create config]
+  related: [kubectl-create-secret, kubectl-apply, kubectl-edit]
+
+- id: kubectl-edit
+  tool: kubectl
+  category: config
+  name: kubectl edit
+  syntax: kubectl edit RESOURCE NAME [-n NS]
+  summary: Edit a live resource in your $EDITOR
+  description: Changes apply immediately on save. Great for hotfixes, bad for reproducibility, mirror the change back to Git.
+  flags:
+    - {flag: "-o yaml/json", description: "Edit format"}
+    - {flag: "--save-config", description: "Write the last-applied annotation"}
+  examples:
+    - {cmd: "kubectl edit deploy/web -n prod", description: "Quick live change"}
+    - {cmd: "KUBE_EDITOR='code --wait' kubectl edit cm/app-config", description: "Use another editor"}
+  keywords: [edit resource, modify live, change config, hotfix, update object, vim]
+  related: [kubectl-patch, kubectl-apply, kubectl-set-image]
+  danger: caution
+
+- id: kubectl-patch
+  tool: kubectl
+  category: config
+  name: kubectl patch
+  syntax: kubectl patch RESOURCE NAME [--type=strategic|merge|json] -p 'PATCH'
+  summary: Update specific fields of a resource without a full manifest
+  flags:
+    - {flag: "--type=strategic", description: "Default, understands lists with merge keys"}
+    - {flag: "--type=merge", description: "JSON merge patch, lists are replaced"}
+    - {flag: "--type=json", description: "RFC 6902 operations (add, replace, remove)"}
+    - {flag: "-p, --patch / --patch-file", description: "Patch body inline or from a file"}
+  examples:
+    - {cmd: "kubectl patch deploy web -p '{\"spec\":{\"replicas\":5}}'", description: "Change replicas"}
+    - {cmd: "kubectl patch svc web -p '{\"spec\":{\"type\":\"LoadBalancer\"}}'", description: "Switch a Service type"}
+    - {cmd: "kubectl patch pv pv-1 --type=json -p '[{\"op\":\"remove\",\"path\":\"/metadata/finalizers\"}]'", description: "Remove a stuck finalizer"}
+    - {cmd: "kubectl patch deploy web --type=json -p '[{\"op\":\"replace\",\"path\":\"/spec/template/spec/containers/0/image\",\"value\":\"nginx:1.27\"}]'", description: "Replace a nested list item"}
+  keywords: [patch, partial update, change field, remove finalizer, modify resource, json patch, scale via patch]
+  related: [kubectl-edit, kubectl-apply, kubectl-set-image]
+  danger: caution
+
+- id: kubectl-replace
+  tool: kubectl
+  category: config
+  name: kubectl replace
+  syntax: kubectl replace -f FILE [--force]
+  summary: Replace a resource entirely with the contents of a manifest
+  flags:
+    - {flag: "--force", description: "Delete and re-create (needed for immutable fields; causes downtime)"}
+  examples:
+    - {cmd: "kubectl replace --force -f job.yaml", description: "Recreate a Job whose spec is immutable"}
+  keywords: [replace resource, recreate, immutable field, force replace, overwrite]
+  related: [kubectl-apply, kubectl-delete, kubectl-diff]
+  danger: destructive
+
+- id: kubectl-delete
+  tool: kubectl
+  category: config
+  name: kubectl delete
+  syntax: kubectl delete RESOURCE [NAME] | -f FILE | -l SELECTOR [-n NS] [--grace-period=N] [--wait]
+  summary: Delete resources by name, file or label selector
+  description: Always double-check the namespace (kubectl config view --minify | grep namespace). Namespaces cascade-delete everything inside.
+  flags:
+    - {flag: "-f", description: "Delete everything defined in a manifest"}
+    - {flag: "-l, --selector", description: "Delete all matching resources"}
+    - {flag: "--all", description: "Every resource of that type in the namespace"}
+    - {flag: "--grace-period=0 --force", description: "Immediate removal from the API (can leave processes running)"}
+    - {flag: "--wait=false", description: "Return without waiting for finalizers"}
+    - {flag: "--cascade=foreground|background|orphan", description: "Control deletion of dependents"}
+    - {flag: "--dry-run=server", description: "Show what would be deleted"}
+  examples:
+    - {cmd: "kubectl delete -f deploy.yaml", description: "Remove what a manifest created"}
+    - {cmd: "kubectl delete pods -l app=web -n staging --dry-run=server", description: "Preview a selector-based delete"}
+    - {cmd: "kubectl delete pod stuck-pod --grace-period=0 --force", description: "Last resort for a pod stuck Terminating"}
+    - {cmd: "kubectl delete ns feature-x", description: "Delete a namespace and everything in it"}
+  keywords: [delete resource, remove, cleanup, destroy, terminate, namespace delete, force delete, stuck terminating]
+  related: [kubectl-delete-pod, kubectl-get, kubectl-apply]
+  danger: destructive
+
+- id: kubectl-delete-pod
+  tool: kubectl
+  category: workloads
+  name: kubectl delete pod
+  syntax: kubectl delete pod POD [-n NAMESPACE] [--grace-period=N] [--force]
+  summary: Delete a pod
+  description: If the pod is managed by a Deployment, ReplicaSet or StatefulSet it is recreated immediately, effectively a restart.
+  flags:
+    - {flag: "--grace-period", description: "Seconds to wait before killing (default 30)"}
+    - {flag: "--force", description: "Remove from the API immediately (risky, use with grace-period=0)"}
+    - {flag: "-l", description: "Delete all pods matching a label"}
+    - {flag: "--field-selector", description: "e.g. status.phase=Failed to clear failed pods"}
+  examples:
+    - {cmd: "kubectl delete pod web-7d4f -n prod", description: "Restart a pod managed by a controller"}
+    - {cmd: "kubectl delete pods -n prod --field-selector=status.phase=Failed", description: "Clean up Failed or Evicted pods"}
+    - {cmd: "kubectl delete pod web-7d4f --grace-period=0 --force", description: "Unstick a pod in Terminating"}
+  keywords: [delete pod, remove pod, restart pod, kill pod, evicted pods, clean failed pods]
+  related: [kubectl-get-pods, kubectl-rollout-restart, kubectl-delete]
+  danger: destructive
+
+# ======================= DEPLOYMENTS =======================
+- id: kubectl-rollout-status
+  tool: kubectl
+  category: deployments
+  name: kubectl rollout status
+  syntax: kubectl rollout status deploy|sts|ds NAME [-n NS] [--timeout=5m]
+  summary: Wait for a rollout to finish and report whether it succeeded
+  flags:
+    - {flag: "--timeout", description: "Give up after this duration (exit code 1)"}
+    - {flag: "-w=false", description: "Print the current status and return immediately"}
+  examples:
+    - {cmd: "kubectl apply -f deploy.yaml && kubectl rollout status deploy/web --timeout=300s", description: "Pipeline step that fails if the rollout does not complete"}
+  keywords: [rollout status, wait for deployment, deployment ready, deploy progress, verify rollout, ci]
+  related: [kubectl-rollout-undo, kubectl-rollout-history, kubectl-apply, kubectl-get]
+
+- id: kubectl-rollout-history
+  tool: kubectl
+  category: deployments
+  name: kubectl rollout history
+  syntax: kubectl rollout history deploy NAME [--revision=N]
+  summary: Show the revision history of a Deployment, DaemonSet or StatefulSet
+  flags:
+    - {flag: "--revision", description: "Show the pod template of one revision"}
+  examples:
+    - {cmd: "kubectl rollout history deploy/web --revision=3", description: "See exactly what revision 3 deployed"}
+  keywords: [revisions, deployment history, previous versions, changelog, what was deployed]
+  related: [kubectl-rollout-undo, kubectl-rollout-status]
+
+- id: kubectl-rollout-undo
+  tool: kubectl
+  category: deployments
+  name: kubectl rollout undo
+  syntax: kubectl rollout undo deploy NAME [--to-revision=N]
+  summary: Roll a workload back to a previous revision
+  flags:
+    - {flag: "--to-revision", description: "Revision number, default is the previous one"}
+    - {flag: "--dry-run", description: "Simulate"}
+  examples:
+    - {cmd: "kubectl rollout undo deploy/web -n prod", description: "Quick rollback after a bad release"}
+    - {cmd: "kubectl rollout undo deploy/web --to-revision=2", description: "Go to a specific revision"}
+  keywords: [rollback, undo deployment, revert, bad release, go back, restore previous]
+  related: [kubectl-rollout-history, kubectl-rollout-status, kubectl-set-image]
+  danger: caution
+
+- id: kubectl-rollout-restart
+  tool: kubectl
+  category: deployments
+  name: kubectl rollout restart
+  syntax: kubectl rollout restart deploy|sts|ds NAME [-n NS]
+  summary: Trigger a rolling restart of all pods of a workload
+  description: Picks up new ConfigMap/Secret values mounted as env vars and re-pulls :latest images (with imagePullPolicy Always), without any downtime for properly configured Deployments.
+  examples:
+    - {cmd: "kubectl rollout restart deploy/web -n prod", description: "Rolling restart"}
+    - {cmd: "kubectl rollout restart deploy -n prod", description: "Restart every Deployment in a namespace"}
+  keywords: [restart deployment, rolling restart, reload config, bounce pods, restart all pods]
+  related: [kubectl-rollout-status, kubectl-delete-pod, kubectl-scale]
+  danger: caution
+
+- id: kubectl-scale
+  tool: kubectl
+  category: deployments
+  name: kubectl scale
+  syntax: kubectl scale deploy|sts|rs NAME --replicas=N [--current-replicas=M]
+  summary: Change the number of replicas of a workload
+  flags:
+    - {flag: "--replicas", description: "Desired replica count"}
+    - {flag: "--current-replicas", description: "Only scale if the current count matches (safe guard)"}
+    - {flag: "-l", description: "Scale everything matching a label"}
+  examples:
+    - {cmd: "kubectl scale deploy/web --replicas=5 -n prod", description: "Scale out"}
+    - {cmd: "kubectl scale deploy -n staging --all --replicas=0", description: "Switch off a whole environment"}
+    - {cmd: "kubectl scale sts/db --replicas=3 --current-replicas=1", description: "Scale only if currently 1"}
+  keywords: [scale, replicas, scale up, scale down, increase pods, stop workload, zero replicas]
+  related: [kubectl-autoscale, kubectl-rollout-status, kubectl-get]
+  danger: caution
+
+- id: kubectl-autoscale
+  tool: kubectl
+  category: deployments
+  name: kubectl autoscale
+  syntax: kubectl autoscale deploy NAME --min=N --max=M --cpu-percent=P
+  summary: Create a HorizontalPodAutoscaler for a workload
+  description: Requires metrics-server and CPU requests defined on the containers.
+  examples:
+    - {cmd: "kubectl autoscale deploy web --min=2 --max=10 --cpu-percent=70", description: "Scale between 2 and 10 pods at 70% CPU"}
+    - {cmd: "kubectl get hpa -w", description: "Watch the autoscaler's decisions"}
+  keywords: [hpa, horizontal pod autoscaler, autoscaling, scale automatically, cpu based, elastic]
+  related: [kubectl-scale, kubectl-top]
+
+- id: kubectl-set-image
+  tool: kubectl
+  category: deployments
+  name: kubectl set image
+  syntax: kubectl set image deploy/NAME CONTAINER=IMAGE:TAG [-n NS]
+  summary: Update a container image and trigger a rolling update
+  examples:
+    - {cmd: "kubectl set image deploy/web web=registry.example.com/web:1.4.2 -n prod", description: "Deploy a new image version"}
+    - {cmd: "kubectl set image deploy/web '*=nginx:1.27'", description: "Update every container to the same image"}
+  keywords: [update image, change image, new version, rolling update, deploy tag, set image]
+  related: [kubectl-rollout-status, kubectl-rollout-undo, kubectl-patch]
+  danger: caution
+
+# ======================= NETWORKING / ACCESS =======================
+- id: kubectl-expose
+  tool: kubectl
+  category: networking
+  name: kubectl expose
+  syntax: kubectl expose RESOURCE NAME --port=P [--target-port=T] [--type=ClusterIP|NodePort|LoadBalancer]
+  summary: Create a Service for a Deployment, Pod or ReplicaSet
+  flags:
+    - {flag: "--port", description: "Port the Service listens on"}
+    - {flag: "--target-port", description: "Container port to forward to"}
+    - {flag: "--type", description: "ClusterIP (default), NodePort, LoadBalancer"}
+    - {flag: "--name", description: "Service name if different from the resource"}
+    - {flag: "--dry-run=client -o yaml", description: "Generate the manifest"}
+  examples:
+    - {cmd: "kubectl expose deploy web --port=80 --target-port=8080 --dry-run=client -o yaml", description: "Generate a Service manifest"}
+  keywords: [create service, expose deployment, service, loadbalancer, nodeport, clusterip, networking]
+  related: [kubectl-port-forward, kubectl-describe, kubectl-get]
+
+- id: kubectl-port-forward
+  tool: kubectl
+  category: networking
+  name: kubectl port-forward
+  syntax: kubectl port-forward pod/NAME|svc/NAME|deploy/NAME LOCAL:REMOTE [-n NS] [--address 0.0.0.0]
+  summary: Tunnel a local port to a pod or service in the cluster
+  flags:
+    - {flag: "--address", description: "Local bind addresses (default localhost, use 0.0.0.0 to share)"}
+    - {flag: "LOCAL:REMOTE", description: "Local port and target port; a single number uses the same for both"}
+    - {flag: "-n", description: "Namespace"}
+  examples:
+    - {cmd: "kubectl port-forward svc/web 8080:80 -n prod", description: "Open http://localhost:8080"}
+    - {cmd: "kubectl port-forward deploy/db 5432:5432 -n prod", description: "Connect a local psql to the database"}
+    - {cmd: "kubectl port-forward pod/web-7d4f 9229:9229", description: "Attach a remote debugger"}
+  keywords: [port forward, tunnel, access service locally, local access, connect to pod, debug locally, proxy]
+  related: [kubectl-exec, kubectl-expose, kubectl-get-pods]
+
+- id: kubectl-exec
+  tool: kubectl
+  category: debugging
+  name: kubectl exec
+  syntax: kubectl exec [-it] POD [-c CONTAINER] -- COMMAND [ARGS]
+  summary: Run a command inside a running container
+  description: Remember the double dash separating kubectl flags from the command.
+  flags:
+    - {flag: "-i, -t", description: "Keep stdin open and allocate a TTY for interactive shells"}
+    - {flag: "-c, --container", description: "Target container"}
+    - {flag: "-n", description: "Namespace"}
+  examples:
+    - {cmd: "kubectl exec -it web-7d4f -n prod -- sh", description: "Interactive shell (try bash if available)"}
+    - {cmd: "kubectl exec web-7d4f -- env | sort", description: "Inspect environment variables"}
+    - {cmd: "kubectl exec deploy/web -- curl -s localhost:8080/health", description: "Probe from inside"}
+    - {cmd: "kubectl exec -it db-0 -- psql -U postgres", description: "Run psql in the database pod"}
+  keywords: [shell into pod, exec, run command in container, enter pod, bash, ssh into container, interactive shell]
+  related: [kubectl-debug, kubectl-logs, kubectl-cp, kubectl-port-forward]
+
+- id: kubectl-cp
+  tool: kubectl
+  category: debugging
+  name: kubectl cp
+  syntax: kubectl cp [NS/]POD:PATH LOCAL_PATH | LOCAL_PATH [NS/]POD:PATH [-c CONTAINER]
+  summary: Copy files between your machine and a container
+  description: Requires tar in the container image.
+  examples:
+    - {cmd: "kubectl cp prod/web-7d4f:/var/log/app.log ./app.log", description: "Download a file"}
+    - {cmd: "kubectl cp ./config.json prod/web-7d4f:/app/config.json -c web", description: "Upload a file to a container"}
+  keywords: [copy file, download from pod, upload to pod, transfer files, extract logs, backup file]
+  related: [kubectl-exec, kubectl-logs]
+
+- id: kubectl-debug
+  tool: kubectl
+  category: debugging
+  name: kubectl debug
+  syntax: kubectl debug POD -it --image=IMAGE [--target=CONTAINER] [--copy-to=NAME] | debug node/NODE -it --image=IMAGE
+  summary: Attach an ephemeral debug container to a pod or open a shell on a node
+  description: Works on distroless or minimal images that have no shell. The ephemeral container shares the pod's namespaces.
+  flags:
+    - {flag: "--image", description: "Debug image (e.g. busybox, nicolaka/netshoot)"}
+    - {flag: "--target", description: "Share the process namespace of this container"}
+    - {flag: "--copy-to", description: "Debug a copy of the pod instead of the original"}
+    - {flag: "--share-processes", description: "Share the process namespace in the copy"}
+    - {flag: "--profile", description: "Security profile: general, baseline, restricted, netadmin, sysadmin"}
+  examples:
+    - {cmd: "kubectl debug -it web-7d4f --image=nicolaka/netshoot --target=web", description: "Network tooling next to a minimal container"}
+    - {cmd: "kubectl debug web-7d4f -it --copy-to=web-debug --container=web -- sh", description: "Debug a copy without touching the original"}
+    - {cmd: "kubectl debug node/node-1 -it --image=ubuntu", description: "Host shell via a privileged pod, node filesystem under /host"}
+  keywords: [debug pod, ephemeral container, no shell, distroless, troubleshoot network, node shell, netshoot]
+  related: [kubectl-exec, kubectl-describe-pod, kubectl-logs, kubectl-get-events]
+
+- id: kubectl-run
+  tool: kubectl
+  category: debugging
+  name: kubectl run
+  syntax: kubectl run NAME --image=IMAGE [--rm -it] [--restart=Never] [-- COMMAND]
+  summary: Start a single pod, ideal for one-off tests and debugging
+  flags:
+    - {flag: "--rm", description: "Delete the pod when it exits"}
+    - {flag: "-it", description: "Interactive terminal"}
+    - {flag: "--restart=Never", description: "Run as a plain pod, not a Deployment"}
+    - {flag: "--env, --port, --labels", description: "Set environment, port and labels"}
+    - {flag: "--overrides", description: "Inline JSON to tweak the pod spec"}
+    - {flag: "--dry-run=client -o yaml", description: "Generate a pod manifest"}
+  examples:
+    - {cmd: "kubectl run tmp --rm -it --image=busybox --restart=Never -- sh", description: "Throwaway shell inside the cluster"}
+    - {cmd: "kubectl run dns-test --rm -it --image=busybox:1.36 --restart=Never -- nslookup kubernetes.default", description: "Test cluster DNS"}
+    - {cmd: "kubectl run curl --rm -it --image=curlimages/curl --restart=Never -- curl -sv http://web.prod.svc:80", description: "Test a Service from inside"}
+  keywords: [run pod, temporary pod, test pod, throwaway, one-off, debug container, connectivity test]
+  related: [kubectl-debug, kubectl-exec, kubectl-create]
+
+- id: kubectl-wait
+  tool: kubectl
+  category: debugging
+  name: kubectl wait
+  syntax: kubectl wait --for=condition=CONDITION|delete RESOURCE [NAME] [--timeout=60s]
+  summary: Block until a condition is met, useful in scripts and CI
+  examples:
+    - {cmd: "kubectl wait --for=condition=Ready pod -l app=web -n prod --timeout=120s", description: "Wait for pods to be ready"}
+    - {cmd: "kubectl wait --for=condition=Available deploy/web --timeout=5m", description: "Wait for a Deployment"}
+    - {cmd: "kubectl wait --for=delete pod/web-7d4f --timeout=60s", description: "Wait for removal"}
+    - {cmd: "kubectl wait --for=condition=complete job/migrate --timeout=10m", description: "Wait for a Job to finish"}
+  keywords: [wait, block until ready, script, ci, readiness, condition, job complete, synchronize]
+  related: [kubectl-rollout-status, kubectl-get-pods]
+
+# ======================= CLUSTER / CONTEXT =======================
+- id: kubectl-config-contexts
+  tool: kubectl
+  category: cluster
+  name: kubectl config get-contexts / use-context
+  syntax: kubectl config get-contexts | current-context | use-context NAME | view --minify
+  summary: List, inspect and switch between clusters and contexts
+  description: Always know which context you are in before running anything destructive.
+  flags:
+    - {flag: "get-contexts", description: "All contexts, current one marked with *"}
+    - {flag: "current-context", description: "Print the active context"}
+    - {flag: "use-context", description: "Switch cluster/user/namespace"}
+    - {flag: "view --minify", description: "Show only the active context's config"}
+    - {flag: "--kubeconfig / KUBECONFIG", description: "Use another file, or merge several separated by colons"}
+  examples:
+    - {cmd: "kubectl config get-contexts", description: "List clusters you can talk to"}
+    - {cmd: "kubectl config use-context prod-eu", description: "Switch cluster"}
+    - {cmd: "KUBECONFIG=~/.kube/config:~/.kube/staging kubectl config view --flatten > merged.yaml", description: "Merge kubeconfig files"}
+    - {cmd: "kubectl config view --minify -o jsonpath='{..namespace}'", description: "Which namespace am I in?"}
+  keywords: [switch cluster, contexts, kubeconfig, which cluster, change environment, current context, multi cluster]
+  related: [kubectl-config-set-context, kubectl-cluster-info, kubectl-auth-can-i]
+
+- id: kubectl-config-set-context
+  tool: kubectl
+  category: cluster
+  name: kubectl config set-context
+  syntax: kubectl config set-context --current --namespace=NS
+  summary: Change the default namespace of the current context
+  examples:
+    - {cmd: "kubectl config set-context --current --namespace=prod", description: "Stop typing -n prod on every command"}
+    - {cmd: "kubectl config set-context staging --cluster=staging --user=ci --namespace=apps", description: "Create a new context"}
+  keywords: [default namespace, set namespace, change namespace, current namespace, kubens]
+  related: [kubectl-config-contexts, kubectl-get]
+
+- id: kubectl-cluster-info
+  tool: kubectl
+  category: cluster
+  name: kubectl cluster-info
+  syntax: kubectl cluster-info [dump]
+  summary: Show control plane and core service endpoints
+  examples:
+    - {cmd: "kubectl cluster-info", description: "API server and CoreDNS addresses"}
+    - {cmd: "kubectl cluster-info dump --output-directory=./dump --all-namespaces", description: "Collect diagnostics for a support ticket"}
+    - {cmd: "kubectl version", description: "Client and server versions"}
+  keywords: [cluster info, api server, control plane, endpoints, version, diagnostics, dump]
+  related: [kubectl-config-contexts, kubectl-get-nodes]
+
+- id: kubectl-api-resources
+  tool: kubectl
+  category: cluster
+  name: kubectl api-resources
+  syntax: kubectl api-resources [--namespaced=true|false] [--api-group=G] [-o wide]
+  summary: List every resource type the cluster supports, including CRDs
+  flags:
+    - {flag: "--namespaced", description: "Only namespaced or only cluster-scoped"}
+    - {flag: "--api-group", description: "Restrict to an API group"}
+    - {flag: "--verbs", description: "Filter by supported verbs (e.g. list, delete)"}
+    - {flag: "-o wide", description: "Show verbs and categories"}
+  examples:
+    - {cmd: "kubectl api-resources | grep -i cert", description: "Find cert-manager CRDs and their short names"}
+    - {cmd: "kubectl api-resources --namespaced=false", description: "Cluster-scoped resources"}
+    - {cmd: "kubectl api-versions", description: "All API group versions"}
+  keywords: [resource types, crds, short names, api groups, available resources, kinds, custom resources]
+  related: [kubectl-explain, kubectl-get]
+
+- id: kubectl-explain
+  tool: kubectl
+  category: cluster
+  name: kubectl explain
+  syntax: kubectl explain RESOURCE[.FIELD[.FIELD]] [--recursive] [--api-version=V]
+  summary: Built-in documentation of any resource field
+  flags:
+    - {flag: "--recursive", description: "Show the whole field tree"}
+    - {flag: "--api-version", description: "Pick a specific API version"}
+  examples:
+    - {cmd: "kubectl explain deployment.spec.strategy", description: "What are the rollout options?"}
+    - {cmd: "kubectl explain pod.spec.containers.resources --recursive", description: "All resource-related fields"}
+    - {cmd: "kubectl explain ingress.spec.rules.http.paths", description: "Check the exact schema"}
+  keywords: [documentation, field reference, schema, yaml fields, what does this field do, api reference, manifest help]
+  related: [kubectl-api-resources, kubectl-create, kubectl-apply]
+
+# ======================= NODES =======================
+- id: kubectl-cordon
+  tool: kubectl
+  category: nodes
+  name: kubectl cordon
+  syntax: kubectl cordon NODE
+  summary: Mark a node unschedulable, existing pods keep running
+  examples:
+    - {cmd: "kubectl cordon node-1", description: "Stop new pods from landing on the node"}
+  keywords: [cordon, unschedulable, stop scheduling, maintenance, isolate node]
+  related: [kubectl-drain, kubectl-uncordon, kubectl-get-nodes]
+  danger: caution
+
+- id: kubectl-drain
+  tool: kubectl
+  category: nodes
+  name: kubectl drain
+  syntax: kubectl drain NODE [--ignore-daemonsets] [--delete-emptydir-data] [--force] [--timeout=5m]
+  summary: Safely evict all pods from a node before maintenance
+  description: Cordons the node, then evicts pods respecting PodDisruptionBudgets.
+  flags:
+    - {flag: "--ignore-daemonsets", description: "Skip DaemonSet pods (they cannot be evicted)"}
+    - {flag: "--delete-emptydir-data", description: "Allow evicting pods using emptyDir (data is lost)"}
+    - {flag: "--force", description: "Also evict pods not managed by a controller (they will not come back)"}
+    - {flag: "--grace-period", description: "Override pod termination grace"}
+    - {flag: "--timeout", description: "Fail if the drain takes too long"}
+    - {flag: "--disable-eviction", description: "Delete instead of evict, ignoring PDBs (dangerous)"}
+  examples:
+    - {cmd: "kubectl drain node-1 --ignore-daemonsets --delete-emptydir-data", description: "Standard drain before upgrading a node"}
+    - {cmd: "kubectl drain node-1 --ignore-daemonsets --delete-emptydir-data --timeout=10m", description: "With a safety timeout"}
+  keywords: [drain node, evict pods, node maintenance, upgrade node, move workloads, empty node, pdb]
+  related: [kubectl-cordon, kubectl-uncordon, kubectl-get-nodes, kubectl-get-pods]
+  danger: destructive
+
+- id: kubectl-uncordon
+  tool: kubectl
+  category: nodes
+  name: kubectl uncordon
+  syntax: kubectl uncordon NODE
+  summary: Mark a node schedulable again after maintenance
+  examples:
+    - {cmd: "kubectl uncordon node-1", description: "Allow scheduling again"}
+  keywords: [uncordon, schedulable, resume scheduling, finish maintenance, bring back node]
+  related: [kubectl-cordon, kubectl-drain]
+
+- id: kubectl-taint
+  tool: kubectl
+  category: nodes
+  name: kubectl taint
+  syntax: kubectl taint nodes NODE KEY=VALUE:EFFECT | KEY:EFFECT-
+  summary: Add or remove taints to repel pods from nodes
+  description: "Effects: NoSchedule (new pods), PreferNoSchedule (soft), NoExecute (also evicts running pods). A trailing dash removes the taint."
+  examples:
+    - {cmd: "kubectl taint nodes gpu-1 dedicated=gpu:NoSchedule", description: "Reserve a node for GPU workloads"}
+    - {cmd: "kubectl taint nodes gpu-1 dedicated=gpu:NoSchedule-", description: "Remove the taint"}
+    - {cmd: "kubectl describe node gpu-1 | grep -i taint", description: "Check existing taints"}
+  keywords: [taint, toleration, dedicated nodes, repel pods, node isolation, gpu nodes, scheduling]
+  related: [kubectl-label, kubectl-describe, kubectl-cordon]
+  danger: caution
+
+- id: kubectl-label
+  tool: kubectl
+  category: resources
+  name: kubectl label
+  syntax: kubectl label RESOURCE NAME KEY=VALUE [KEY-] [--overwrite]
+  summary: Add, change or remove labels
+  flags:
+    - {flag: "--overwrite", description: "Allow changing an existing label"}
+    - {flag: "KEY-", description: "A trailing dash removes the label"}
+    - {flag: "-l, --all", description: "Apply to a selection"}
+  examples:
+    - {cmd: "kubectl label node node-1 workload=batch", description: "Label a node for nodeSelector or affinity"}
+    - {cmd: "kubectl label pods -l app=web tier=frontend --overwrite", description: "Relabel a group of pods"}
+    - {cmd: "kubectl label ns staging pod-security.kubernetes.io/enforce=restricted", description: "Set a Pod Security level"}
+  keywords: [labels, tag resource, selector, nodeselector, organize, metadata, add label, remove label]
+  related: [kubectl-annotate, kubectl-get, kubectl-taint]
+
+- id: kubectl-annotate
+  tool: kubectl
+  category: resources
+  name: kubectl annotate
+  syntax: kubectl annotate RESOURCE NAME KEY=VALUE [KEY-] [--overwrite]
+  summary: Add, change or remove annotations (non-identifying metadata)
+  examples:
+    - {cmd: "kubectl annotate ingress web nginx.ingress.kubernetes.io/proxy-body-size=50m", description: "Configure an ingress controller"}
+    - {cmd: "kubectl annotate deploy web kubernetes.io/change-cause='bump to 1.4.2'", description: "Record why a rollout happened"}
+  keywords: [annotations, metadata, ingress annotations, change cause, add annotation]
+  related: [kubectl-label, kubectl-patch]
+
+# ======================= RBAC =======================
+- id: kubectl-auth-can-i
+  tool: kubectl
+  category: rbac
+  name: kubectl auth can-i
+  syntax: kubectl auth can-i VERB RESOURCE [-n NS] [--as USER|system:serviceaccount:NS:SA] [--list]
+  summary: Check whether a user or service account is allowed to perform an action
+  flags:
+    - {flag: "--as", description: "Impersonate a user or service account"}
+    - {flag: "--list", description: "List everything the subject can do in the namespace"}
+    - {flag: "-n", description: "Namespace to test"}
+    - {flag: "--as-group", description: "Impersonate group membership"}
+  examples:
+    - {cmd: "kubectl auth can-i create deployments -n prod", description: "Can I deploy?"}
+    - {cmd: "kubectl auth can-i --list -n prod", description: "Everything I am allowed to do"}
+    - {cmd: "kubectl auth can-i get secrets -n prod --as=system:serviceaccount:prod:ci", description: "Audit a service account"}
+    - {cmd: "kubectl auth whoami", description: "Show who the API server thinks you are (recent versions)"}
+  keywords: [permissions, rbac, access check, forbidden, authorization, service account, can i, who am i, denied]
+  related: [kubectl-config-contexts, kubectl-describe, kubectl-create]

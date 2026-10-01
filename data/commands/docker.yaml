@@ -1,0 +1,842 @@
+# ======================= CONTAINERS =======================
+- id: docker-run
+  tool: docker
+  category: containers
+  name: docker run
+  syntax: docker run [OPTIONS] IMAGE [COMMAND] [ARG...]
+  summary: Creates and starts a new container from an image
+  description: Combines create + start. Without -d it remains in the foreground attached to the terminal.
+  flags:
+    - {flag: "-d, --detach", description: "Runs in the background and prints the ID"}
+    - {flag: "-it", description: "Interactive terminal (-i keeps stdin open, -t allocates a pseudo-TTY)"}
+    - {flag: "--rm", description: "Removes the container when it exits"}
+    - {flag: "--name", description: "Assigns a name to the container"}
+    - {flag: "-p, --publish", description: "Maps host:container port (e.g. 8080:80)"}
+    - {flag: "-v, --volume", description: "Mounts a volume or bind mount (host:container[:ro])"}
+    - {flag: "-e, --env", description: "Sets an environment variable"}
+    - {flag: "--env-file", description: "Loads variables from a file"}
+    - {flag: "--network", description: "Connects the container to a network"}
+    - {flag: "--restart", description: "Restart policy (no, on-failure, always, unless-stopped)"}
+    - {flag: "--memory, --cpus", description: "Resource limits"}
+    - {flag: "-u, --user", description: "User to run as (e.g. 1000:1000)"}
+    - {flag: "--read-only", description: "Read-only root filesystem"}
+  examples:
+    - {cmd: "docker run -d --name web -p 8080:80 nginx:alpine", description: "nginx in the background on port 8080"}
+    - {cmd: "docker run --rm -it ubuntu:24.04 bash", description: "Disposable shell"}
+    - {cmd: "docker run -d --restart unless-stopped -v pgdata:/var/lib/postgresql/data -e POSTGRES_PASSWORD=secret postgres:16", description: "Postgres with persistent volume"}
+  keywords: [start containers, new container, run image, start container, launch]
+  related: [docker-ps, docker-exec, docker-logs, docker-stop, docker-rm]
+  danger: caution
+
+- id: docker-ps
+  tool: docker
+  category: containers
+  name: docker ps
+  syntax: docker ps [-a] [-q] [--filter KEY=VAL] [--format TEMPLATE]
+  summary: Lists containers
+  flags:
+    - {flag: "-a, --all", description: "Includes stopped containers"}
+    - {flag: "-q, --quiet", description: "IDs only"}
+    - {flag: "-f, --filter", description: "Filters (status=exited, name=web, ancestor=nginx)"}
+    - {flag: "--format", description: "Go template for output"}
+    - {flag: "-s, --size", description: "Shows size"}
+    - {flag: "-n", description: "Last N created containers"}
+  examples:
+    - {cmd: "docker ps -a", description: "All containers, including stopped ones"}
+    - {cmd: "docker ps -a -f status=exited", description: "Only terminated ones"}
+    - {cmd: "docker ps --format '{{.Names}}\\t{{.Status}}\\t{{.Ports}}'", description: "Compact custom output"}
+  keywords: [list container, list container, running containers, view container, running]
+  related: [docker-run, docker-inspect, docker-stats, docker-rm]
+
+- id: docker-exec
+  tool: docker
+  category: containers
+  name: docker exec
+  syntax: docker exec [-it] CONTAINER COMMAND [ARG...]
+  summary: Runs a command in an already running container
+  flags:
+    - {flag: "-it", description: "Interactive session with TTY"}
+    - {flag: "-u, --user", description: "User to run as"}
+    - {flag: "-w, --workdir", description: "Working directory"}
+    - {flag: "-e, --env", description: "Additional environment variables"}
+    - {flag: "-d, --detach", description: "Runs in the background"}
+  examples:
+    - {cmd: "docker exec -it web sh", description: "Shell inside the container (Alpine does not includes bash)"}
+    - {cmd: "docker exec -u root web apt-get update", description: "Command as root"}
+  keywords: [enter container, container shell, container bash, terminatel, access container, ssh]
+  related: [docker-run, docker-attach, docker-logs, docker-cp]
+
+- id: docker-logs
+  tool: docker
+  category: containers
+  name: docker logs
+  syntax: docker logs [-f] [--tail N] [--since TIME] CONTAINER
+  summary: Shows container logs (stdout/stderr)
+  flags:
+    - {flag: "-f, --follow", description: "Follows logs in streaming"}
+    - {flag: "--tail", description: "Last N lines"}
+    - {flag: "--since, --until", description: "Time range (e.g. 10m, 2h, timestamp)"}
+    - {flag: "-t, --timestamps", description: "Shows timestamps"}
+  examples:
+    - {cmd: "docker logs -f --tail 100 web", description: "Last 100 lines and streaming"}
+    - {cmd: "docker logs --since 15m -t web", description: "Last 15 minutes with timestamps"}
+  keywords: [container logs, view logs, stream logs, container errors, tail logs]
+  related: [docker-exec, docker-inspect, compose-logs]
+
+- id: docker-start
+  tool: docker
+  category: containers
+  name: docker start
+  syntax: docker start [-a] CONTAINER...
+  summary: Starts one or more stopped containers
+  flags:
+    - {flag: "-a, --attach", description: "Attaches stdout/stderr"}
+    - {flag: "-i, --interactive", description: "Attaches stdin"}
+  keywords: [start containers stopped, riparti, start]
+  related: [docker-stop, docker-restart, docker-run]
+
+- id: docker-stop
+  tool: docker
+  category: containers
+  name: docker stop
+  syntax: docker stop [-t SECONDI] CONTAINER...
+  summary: Stops a container with SIGTERM (then SIGKILL after the timeout)
+  flags:
+    - {flag: "-t, --time", description: "Seconds before SIGKILL (default 10)"}
+    - {flag: "-s, --signal", description: "Signal to send instead of SIGTERM"}
+  examples:
+    - {cmd: "docker stop $(docker ps -q)", description: "Stops all running containers"}
+  keywords: [stop container, shut down, terminate, stop graceful]
+  related: [docker-start, docker-kill, docker-rm]
+  danger: caution
+
+- id: docker-restart
+  tool: docker
+  category: containers
+  name: docker restart
+  syntax: docker restart [-t SECONDI] CONTAINER...
+  summary: Restarts a container
+  keywords: [restart container, restart, reboot]
+  related: [docker-start, docker-stop, compose-restart]
+  danger: caution
+
+- id: docker-kill
+  tool: docker
+  category: containers
+  name: docker kill
+  syntax: docker kill [-s SIGNAL] CONTAINER...
+  summary: Sends a signal (default SIGKILL) to a container
+  description: Terminates immediately without an orderly shutdown. Use docker stop when possible.
+  flags:
+    - {flag: "-s, --signal", description: "Signal (e.g. SIGHUP to reload the configuration)"}
+  keywords: [kill container, force stop, stuck container, sigkill, unresponsive]
+  related: [docker-stop, docker-rm]
+  danger: destructive
+
+- id: docker-rm
+  tool: docker
+  category: containers
+  name: docker rm
+  syntax: docker rm [-f] [-v] CONTAINER...
+  summary: Removes one or more containers
+  flags:
+    - {flag: "-f, --force", description: "Removes even if running"}
+    - {flag: "-v, --volumes", description: "Also removes associated anonymous volumes"}
+  examples:
+    - {cmd: "docker rm $(docker ps -aq -f status=exited)", description: "Removes terminated containers"}
+  keywords: [remove container, delete container, remove, delete container]
+  related: [docker-stop, docker-container-prune, docker-ps]
+  danger: destructive
+
+- id: docker-rename
+  tool: docker
+  category: containers
+  name: docker rename
+  syntax: docker rename OLD_NAME NEW_NAME
+  summary: Renames a container
+  keywords: [rename container, change name]
+  related: [docker-ps]
+
+- id: docker-inspect
+  tool: docker
+  category: containers
+  name: docker inspect
+  syntax: docker inspect [--format TEMPLATE] OBJECT...
+  summary: Shows low-level configuration (JSON) of containers, images, volumes, and networks
+  flags:
+    - {flag: "-f, --format", description: "Extracts a field using a Go template"}
+    - {flag: "--type", description: "Forces the type (container, image, volume, network)"}
+  examples:
+    - {cmd: "docker inspect -f '{{.NetworkSettings.IPAddress}}' web", description: "Container IP"}
+    - {cmd: "docker inspect -f '{{.State.ExitCode}}' web", description: "Exit code from the last stop"}
+    - {cmd: "docker inspect -f '{{json .Mounts}}' web", description: "Container mounts in JSON"}
+  keywords: [container details, container IP, configuration, json, mount, healthcheck]
+  related: [docker-ps, docker-logs, docker-network-inspect]
+
+- id: docker-stats
+  tool: docker
+  category: containers
+  name: docker stats
+  syntax: docker stats [--no-stream] [CONTAINER...]
+  summary: Live CPU, memory, network, and I/O usage of containers
+  flags:
+    - {flag: "--no-stream", description: "Prints once and exits"}
+    - {flag: "--format", description: "Output template"}
+    - {flag: "-a, --all", description: "Includes i container stopped"}
+  examples:
+    - {cmd: "docker stats --no-stream --format 'table {{.Name}}\\t{{.CPUPerc}}\\t{{.MemUsage}}'", description: "Compact CPU and RAM snapshot"}
+  keywords: [usage cpu, usage ram, memory container, monitoraggio, resources, performance]
+  related: [docker-top, docker-ps, docker-run]
+
+- id: docker-top
+  tool: docker
+  category: containers
+  name: docker top
+  syntax: docker top CONTAINER [ps OPTIONS]
+  summary: Shows processes running in a container
+  keywords: [processes container, ps container, pid]
+  related: [docker-stats, docker-exec]
+
+- id: docker-cp
+  tool: docker
+  category: containers
+  name: docker cp
+  syntax: "docker cp SRC DEST  (CONTAINER:PATH oppure PATH locale)"
+  summary: Copies files between the host and a container
+  flags:
+    - {flag: "-a, --archive", description: "Preserves UID/GID"}
+    - {flag: "-L", description: "Follows symlinks"}
+  examples:
+    - {cmd: "docker cp web:/etc/nginx/nginx.conf ./nginx.conf", description: "From the container to the host"}
+    - {cmd: "docker cp ./index.html web:/usr/share/nginx/html/", description: "From the host to the container"}
+  keywords: [copies file, pulls file da container, upload file, trasferisci]
+  related: [docker-exec, docker-diff]
+
+- id: docker-attach
+  tool: docker
+  category: containers
+  name: docker attach
+  syntax: docker attach [--detach-keys=SEQ] CONTAINER
+  summary: Attaches the terminal to stdin/stdout of the main process
+  description: "To detach without stopping the container use Ctrl-p Ctrl-q. Ctrl-c sends SIGINT to the process."
+  keywords: [collegati container, attach, console container]
+  related: [docker-exec, docker-logs]
+
+- id: docker-diff
+  tool: docker
+  category: containers
+  name: docker diff
+  syntax: docker diff CONTAINER
+  summary: Shows files changed relative to the image (A added, C changed, D deleted)
+  keywords: [filesystem changes, what changed, container differences]
+  related: [docker-commit, docker-cp]
+
+- id: docker-port
+  tool: docker
+  category: containers
+  name: docker port
+  syntax: docker port CONTAINER [PRIVATE_PORT]
+  summary: Shows a container's port mappings
+  keywords: [container ports, port mapping, port host, publish]
+  related: [docker-run, docker-ps]
+
+- id: docker-update
+  tool: docker
+  category: containers
+  name: docker update
+  syntax: docker update [OPTIONS] CONTAINER...
+  summary: Changes resource limits and restart policy of an existing container
+  flags:
+    - {flag: "--restart", description: "New restart policy"}
+    - {flag: "--memory", description: "New memory limit"}
+    - {flag: "--cpus", description: "New CPU limit"}
+  examples:
+    - {cmd: "docker update --restart unless-stopped web", description: "Changes the policy without recreating the container"}
+  keywords: [change limits, restart policy, modify container, cpu limit, memory limit]
+  related: [docker-run, docker-stats]
+  danger: caution
+
+- id: docker-container-prune
+  tool: docker
+  category: containers
+  name: docker container prune
+  syntax: docker container prune [-f] [--filter until=24h]
+  summary: Removes all stopped containers
+  flags:
+    - {flag: "-f, --force", description: "Skips confirmation"}
+    - {flag: "--filter", description: "E.g. until=24h to keep the most recent ones"}
+  keywords: [clean containers, remove stopped, cleanup, remove exited]
+  related: [docker-rm, docker-system-prune]
+  danger: destructive
+
+# ======================= IMAGES =======================
+- id: docker-build
+  tool: docker
+  category: images
+  name: docker build
+  syntax: docker build [-t NAME:TAG] [-f DOCKERFILE] [--build-arg K=V] CONTEXT
+  summary: Builds an image from a Dockerfile
+  flags:
+    - {flag: "-t, --tag", description: "Image name and tag"}
+    - {flag: "-f, --file", description: "Dockerfile path"}
+    - {flag: "--build-arg", description: "Passes a build ARG"}
+    - {flag: "--target", description: "Specific stage of a multi-stage build"}
+    - {flag: "--no-cache", description: "Ignores the layer cache"}
+    - {flag: "--platform", description: "Target platform (e.g. linux/amd64)"}
+    - {flag: "--pull", description: "Always pulls the latest base image"}
+    - {flag: "--progress=plain", description: "Full output, useful for debugging"}
+  examples:
+    - {cmd: "docker build -t myapp:1.0 .", description: "Builds from the current directory"}
+    - {cmd: "docker build --target prod --build-arg VERSION=2.1 -t myapp:prod .", description: "Production stage with build argument"}
+  keywords: [create image, build image, dockerfile, build image, compila]
+  related: [docker-buildx-build, docker-tag, docker-push, docker-history, compose-build]
+
+- id: docker-buildx-build
+  tool: docker
+  category: images
+  name: docker buildx build
+  syntax: docker buildx build [--platform P1,P2] [--push|--load] -t NAME:TAG .
+  summary: Advanced builds with BuildKit, multi-platform support, and exportable cache
+  flags:
+    - {flag: "--platform", description: "Multiple platforms (linux/amd64,linux/arm64)"}
+    - {flag: "--push", description: "Pushes directly to the registry"}
+    - {flag: "--load", description: "Loads the image into the local Docker image store (single platform only)"}
+    - {flag: "--cache-from, --cache-to", description: "Remote cache (type=registry or type=gha)"}
+    - {flag: "--secret", description: "Passes a secret to the build without leaving it in the layers"}
+  examples:
+    - {cmd: "docker buildx build --platform linux/amd64,linux/arm64 -t user/app:1.0 --push .", description: "Multi-architecture image"}
+  keywords: [multi architettura, arm64, apple silicon, buildkit, cache ci, multiplatform]
+  related: [docker-build, docker-push]
+
+- id: docker-images
+  tool: docker
+  category: images
+  name: docker images
+  syntax: docker images [-a] [-q] [--filter dangling=true] [REPO[:TAG]]
+  summary: Lists local images
+  flags:
+    - {flag: "-a, --all", description: "Includes intermediate layers"}
+    - {flag: "-q", description: "IDs only"}
+    - {flag: "-f, --filter", description: "Es. dangling=true, reference=nginx*"}
+    - {flag: "--digests", description: "Shows i digest"}
+  examples:
+    - {cmd: "docker images -f dangling=true", description: "Dangling images (without a tag)"}
+  keywords: [list images, image list, local images, image ls]
+  related: [docker-rmi, docker-pull, docker-image-prune]
+
+- id: docker-pull
+  tool: docker
+  category: images
+  name: docker pull
+  syntax: docker pull [OPTIONS] NAME[:TAG|@DIGEST]
+  summary: Pulls an image from a registry
+  flags:
+    - {flag: "-a, --all-tags", description: "All repository tags"}
+    - {flag: "--platform", description: "Specific platform"}
+  examples:
+    - {cmd: "docker pull nginx:1.27-alpine", description: "Specific tag (avoid :latest in production)"}
+  keywords: [pull image, download immagine, registry, docker hub]
+  related: [docker-push, docker-images, docker-login]
+
+- id: docker-push
+  tool: docker
+  category: images
+  name: docker push
+  syntax: docker push NAME[:TAG]
+  summary: Pushes an image to a registry
+  flags:
+    - {flag: "-a, --all-tags", description: "Pushes all tags"}
+  examples:
+    - {cmd: "docker push registry.example.com/team/app:1.0", description: "Push to a private registry"}
+  keywords: [push image, push to registry, upload immagine, publish]
+  related: [docker-tag, docker-login, docker-build]
+
+- id: docker-tag
+  tool: docker
+  category: images
+  name: docker tag
+  syntax: docker tag SOURCE[:TAG] TARGET[:TAG]
+  summary: Creates a new tag (alias) for an image
+  examples:
+    - {cmd: "docker tag myapp:1.0 registry.example.com/team/myapp:1.0", description: "Prepares the image for pushing to a registry"}
+  keywords: [tag image, rename image, versione, alias immagine]
+  related: [docker-push, docker-build]
+
+- id: docker-rmi
+  tool: docker
+  category: images
+  name: docker rmi
+  syntax: docker rmi [-f] IMAGE...
+  summary: Removes one or more images
+  flags:
+    - {flag: "-f, --force", description: "Forces removal"}
+  examples:
+    - {cmd: "docker rmi $(docker images -q -f dangling=true)", description: "Removes dangling images"}
+  keywords: [remove image, delete image, remove image, delete image]
+  related: [docker-images, docker-image-prune]
+  danger: destructive
+
+- id: docker-image-prune
+  tool: docker
+  category: images
+  name: docker image prune
+  syntax: docker image prune [-a] [-f] [--filter until=168h]
+  summary: Removes unused images
+  flags:
+    - {flag: "-a, --all", description: "All images not used by containers (not only dangling ones)"}
+    - {flag: "--filter", description: "E.g. until=168h to keep recent ones"}
+    - {flag: "-f", description: "Without confirmation"}
+  keywords: [clean images, free space, dangling images, dangling, cleanup]
+  related: [docker-rmi, docker-system-prune, docker-system-df]
+  danger: destructive
+
+- id: docker-history
+  tool: docker
+  category: images
+  name: docker history
+  syntax: docker history [--no-trunc] IMAGE
+  summary: Shows an image's layers and their size
+  keywords: [layer immagine, size layer, peso immagine, ottimizza immagine, cronologia]
+  related: [docker-build, docker-images]
+
+- id: docker-save
+  tool: docker
+  category: images
+  name: docker save
+  syntax: docker save -o FILE.tar IMAGE...
+  summary: Exports images to a tar archive (with layers and tags)
+  examples:
+    - {cmd: "docker save -o app.tar myapp:1.0", description: "Exports for offline transfer"}
+    - {cmd: "docker save myapp:1.0 | gzip > app.tar.gz", description: "Exports compressed"}
+  keywords: [export image, image backup, offline transfer, air gapped, tar]
+  related: [docker-load]
+
+- id: docker-load
+  tool: docker
+  category: images
+  name: docker load
+  syntax: docker load -i FILE.tar
+  summary: Imports images from an archive created with docker save
+  keywords: [import image, restore image, loads da tar, offline]
+  related: [docker-save]
+
+- id: docker-commit
+  tool: docker
+  category: images
+  name: docker commit
+  syntax: docker commit [-m MSG] CONTAINER [REPO[:TAG]]
+  summary: Creates an image from the current state of a container
+  description: Useful for experiments; for reproducible environments prefer a Dockerfile.
+  keywords: [salva container come immagine, snapshot container]
+  related: [docker-diff, docker-build]
+
+- id: docker-search
+  tool: docker
+  category: images
+  name: docker search
+  syntax: docker search [--filter is-official=true] TERM
+  summary: Searches for images on Docker Hub
+  keywords: [search image, find image, docker hub]
+  related: [docker-pull]
+
+# ======================= REGISTRY =======================
+- id: docker-login
+  tool: docker
+  category: registry
+  name: docker login
+  syntax: docker login [SERVER] [-u USER] [--password-stdin]
+  summary: Authenticates the client to a registry
+  flags:
+    - {flag: "-u, --username", description: "Username"}
+    - {flag: "--password-stdin", description: "Reads the password from stdin (avoids putting it in shell history)"}
+  examples:
+    - {cmd: "echo $TOKEN | docker login ghcr.io -u USER --password-stdin", description: "Non-interactive login (CI)"}
+  keywords: [registry login, authentication, credentials, ghcr, ecr, token]
+  related: [docker-push, docker-pull, docker-logout]
+
+- id: docker-logout
+  tool: docker
+  category: registry
+  name: docker logout
+  syntax: docker logout [SERVER]
+  summary: Removes saved credentials for a registry
+  keywords: [registry logout, remove credentials, disconnetti]
+  related: [docker-login]
+
+# ======================= VOLUMES =======================
+- id: docker-volume-create
+  tool: docker
+  category: volumes
+  name: docker volume create
+  syntax: docker volume create [--driver D] [--opt K=V] NAME
+  summary: Creates a named volume
+  examples:
+    - {cmd: "docker volume create pgdata", description: "Volume for persistent data"}
+  keywords: [create volume, persistent data, storage, persistenza]
+  related: [docker-volume-ls, docker-run]
+
+- id: docker-volume-ls
+  tool: docker
+  category: volumes
+  name: docker volume ls
+  syntax: docker volume ls [-f dangling=true]
+  summary: Lists volumes
+  flags:
+    - {flag: "-f, --filter", description: "E.g. dangling=true for unused volumes"}
+  keywords: [list volumes, list volumes, dangling volumes]
+  related: [docker-volume-inspect, docker-volume-prune]
+
+- id: docker-volume-inspect
+  tool: docker
+  category: volumes
+  name: docker volume inspect
+  syntax: docker volume inspect VOLUME
+  summary: Volume details (mountpoint, driver, options)
+  keywords: [where is the data, mountpoint, percorso volume]
+  related: [docker-volume-ls, docker-inspect]
+
+- id: docker-volume-rm
+  tool: docker
+  category: volumes
+  name: docker volume rm
+  syntax: docker volume rm VOLUME...
+  summary: Removes one or more volumes (data is lost)
+  keywords: [remove volume, delete data, remove volume]
+  related: [docker-volume-ls, docker-volume-prune]
+  danger: destructive
+
+- id: docker-volume-prune
+  tool: docker
+  category: volumes
+  name: docker volume prune
+  syntax: docker volume prune [-a] [-f]
+  summary: Removes all volumes not used by any container
+  description: "Warning: data in volumes of stopped containers is permanently deleted."
+  flags:
+    - {flag: "-a, --all", description: "Also includes named volumes (not only anonymous ones)"}
+  keywords: [clean volumes, free space, cleanup volumes]
+  related: [docker-volume-rm, docker-system-prune]
+  danger: destructive
+
+# ======================= NETWORK =======================
+- id: docker-network-create
+  tool: docker
+  category: network
+  name: docker network create
+  syntax: docker network create [--driver bridge|overlay] [--subnet CIDR] NAME
+  summary: Creates a Docker network
+  description: On user-defined bridge networks, containers resolve each other by name through the internal DNS.
+  flags:
+    - {flag: "--driver", description: "bridge (default), overlay, macvlan"}
+    - {flag: "--subnet", description: "CIDR subnet"}
+    - {flag: "--internal", description: "Isolated network without external access"}
+  examples:
+    - {cmd: "docker network create backend", description: "Custom bridge network"}
+  keywords: [create network, container communication, container DNS, bridge, overlay]
+  related: [docker-network-ls, docker-network-connect, docker-run]
+
+- id: docker-network-ls
+  tool: docker
+  category: network
+  name: docker network ls
+  syntax: docker network ls [-f driver=bridge]
+  summary: Lists networks
+  keywords: [list networks, network list]
+  related: [docker-network-inspect, docker-network-create]
+
+- id: docker-network-inspect
+  tool: docker
+  category: network
+  name: docker network inspect
+  syntax: docker network inspect NETWORK
+  summary: Network details and connected containers with their IPs
+  keywords: [container IP, container in the network, subnet, gateway, debug network]
+  related: [docker-network-ls, docker-inspect]
+
+- id: docker-network-connect
+  tool: docker
+  category: network
+  name: docker network connect
+  syntax: docker network connect [--alias NAME] NETWORK CONTAINER
+  summary: Connects an existing container to a network
+  flags:
+    - {flag: "--alias", description: "DNS alias on the network"}
+    - {flag: "--ip", description: "Static IP"}
+  keywords: [connect to network, add to network, connect container]
+  related: [docker-network-disconnect, docker-network-create]
+
+- id: docker-network-disconnect
+  tool: docker
+  category: network
+  name: docker network disconnect
+  syntax: docker network disconnect [-f] NETWORK CONTAINER
+  summary: Disconnects a container from a network
+  keywords: [disconnect from network, isolate container]
+  related: [docker-network-connect]
+  danger: caution
+
+- id: docker-network-rm
+  tool: docker
+  category: network
+  name: docker network rm
+  syntax: docker network rm NETWORK...
+  summary: Removes one or more networks (they must have no active containers)
+  keywords: [remove network, delete network, remove network]
+  related: [docker-network-ls, docker-network-create]
+  danger: destructive
+
+# ======================= SYSTEM =======================
+- id: docker-system-df
+  tool: docker
+  category: system
+  name: docker system df
+  syntax: docker system df [-v]
+  summary: Shows space used by images, containers, volumes, and build cache
+  flags:
+    - {flag: "-v, --verbose", description: "Per-object details"}
+  keywords: [Docker disk space, Docker disk full, quanto occupa, /var/lib/docker]
+  related: [docker-system-prune, docker-image-prune]
+
+- id: docker-system-prune
+  tool: docker
+  category: system
+  name: docker system prune
+  syntax: docker system prune [-a] [--volumes] [-f] [--filter until=24h]
+  summary: Removes stopped containers, unused networks, dangling images, and build cache
+  description: With -a it removes all unused images; with --volumes it also removes unused volumes (data is lost).
+  flags:
+    - {flag: "-a, --all", description: "All unused images"}
+    - {flag: "--volumes", description: "Includes unused volumes"}
+    - {flag: "-f", description: "Skips confirmation"}
+    - {flag: "--filter", description: "E.g. until=72h"}
+  keywords: [full cleanup, free space, Docker cleanup, remove everything, disco pieno]
+  related: [docker-system-df, docker-image-prune, docker-volume-prune, docker-container-prune]
+  danger: destructive
+
+- id: docker-info
+  tool: docker
+  category: system
+  name: docker info
+  syntax: docker info [--format TEMPLATE]
+  summary: Daemon information (storage driver, runtime, version, resources)
+  keywords: [Docker information, daemon configuration, storage driver, cgroup]
+  related: [docker-version, docker-system-df]
+
+- id: docker-version
+  tool: docker
+  category: system
+  name: docker version
+  syntax: docker version
+  summary: Docker client and server version
+  keywords: [Docker version, quale versione]
+  related: [docker-info]
+
+- id: docker-events
+  tool: docker
+  category: system
+  name: docker events
+  syntax: docker events [--since TIME] [--filter type=container]
+  summary: Daemon event stream (start, die, oom, health_status)
+  examples:
+    - {cmd: "docker events --filter event=oom --filter event=die", description: "Follows container deaths and OOM events"}
+  keywords: [Docker events, event monitoring, oom, die, daemon debugging]
+  related: [docker-logs, docker-inspect]
+
+- id: docker-context-use
+  tool: docker
+  category: system
+  name: docker context
+  syntax: docker context ls | create NAME --docker host=ssh://user@host | use NAME
+  summary: Manages multiple Docker endpoints (remote hosts via SSH)
+  examples:
+    - {cmd: "docker context create prod --docker host=ssh://deploy@10.0.0.5", description: "Registers a remote host"}
+    - {cmd: "docker context use prod", description: "Commands now run on the remote host"}
+  keywords: [remote Docker, ssh, remote host, multiple servers, context]
+  related: [docker-info]
+  danger: caution
+
+# ======================= COMPOSE =======================
+- id: compose-up
+  tool: docker
+  category: compose
+  name: docker compose up
+  syntax: docker compose up [-d] [--build] [--force-recreate] [SERVICE...]
+  summary: Creates and starts the services defined in the Compose file
+  flags:
+    - {flag: "-d, --detach", description: "In the background"}
+    - {flag: "--build", description: "Rebuilds images before starting"}
+    - {flag: "--force-recreate", description: "Recreates containers even without changes"}
+    - {flag: "--no-deps", description: "Does not start dependent services"}
+    - {flag: "--scale SERVICE=N", description: "Number of replicas"}
+    - {flag: "--wait", description: "Waits for services to become healthy"}
+    - {flag: "--remove-orphans", description: "Removes containers for services no longer defined"}
+    - {flag: "-f FILE", description: "Specific Compose file (multiple -f files can be used for overrides)"}
+    - {flag: "--profile", description: "Enables a profile"}
+  examples:
+    - {cmd: "docker compose up -d --build", description: "Start with rebuild"}
+    - {cmd: "docker compose -f compose.yaml -f compose.prod.yaml up -d", description: "Using an override file"}
+    - {cmd: "docker compose up -d --scale worker=3", description: "Three replicas of the worker service"}
+  keywords: [start stack, Compose deployment, docker-compose up, start services, stack]
+  related: [compose-down, compose-ps, compose-logs, compose-build, compose-config]
+  danger: caution
+
+- id: compose-down
+  tool: docker
+  category: compose
+  name: docker compose down
+  syntax: docker compose down [-v] [--rmi all|local] [--remove-orphans]
+  summary: Stops and removes the stack's containers and networks
+  flags:
+    - {flag: "-v, --volumes", description: "Also removes named volumes (data is lost)"}
+    - {flag: "--rmi", description: "Removes images (all or local)"}
+    - {flag: "--remove-orphans", description: "Removes orphan containers"}
+    - {flag: "-t, --timeout", description: "Seconds to wait for stopping"}
+  keywords: [stop stack, stop Compose, destroy stack, docker-compose down, teardown]
+  related: [compose-up, compose-stop]
+  danger: destructive
+
+- id: compose-ps
+  tool: docker
+  category: compose
+  name: docker compose ps
+  syntax: docker compose ps [-a] [--services] [--status STATUS]
+  summary: Lists stack containers with status and ports
+  flags:
+    - {flag: "-a", description: "Includes i container stopped"}
+    - {flag: "--services", description: "Service names only"}
+    - {flag: "--status", description: "Filters by status (running, exited, ...)"}
+  keywords: [stack status, running services, list services, compose status]
+  related: [compose-up, compose-logs, docker-ps]
+
+- id: compose-logs
+  tool: docker
+  category: compose
+  name: docker compose logs
+  syntax: docker compose logs [-f] [--tail N] [SERVICE...]
+  summary: Aggregated service logs
+  flags:
+    - {flag: "-f, --follow", description: "Streaming"}
+    - {flag: "--tail", description: "Last N lines for service"}
+    - {flag: "-t, --timestamps", description: "Timestamps"}
+    - {flag: "--no-log-prefix", description: "Removes the service-name prefix"}
+  examples:
+    - {cmd: "docker compose logs -f --tail 50 api db", description: "Follows api and db"}
+  keywords: [stack logs, service logs, compose logs, service errors]
+  related: [compose-ps, docker-logs, compose-exec]
+
+- id: compose-exec
+  tool: docker
+  category: compose
+  name: docker compose exec
+  syntax: docker compose exec [-u USER] SERVICE COMMAND
+  summary: Runs a command in a running service
+  examples:
+    - {cmd: "docker compose exec db psql -U postgres", description: "psql client in the db service"}
+    - {cmd: "docker compose exec api sh", description: "Shell in the api service"}
+  keywords: [service shell, enter service, command in Compose, accedi]
+  related: [compose-run, docker-exec, compose-ps]
+
+- id: compose-run
+  tool: docker
+  category: compose
+  name: docker compose run
+  syntax: docker compose run [--rm] [--no-deps] SERVICE [COMMAND]
+  summary: Runs a one-off command in a new service container
+  flags:
+    - {flag: "--rm", description: "Removes the container when it finishes"}
+    - {flag: "--no-deps", description: "Does not start dependencies"}
+    - {flag: "-e, -v, -p", description: "Same as docker run"}
+    - {flag: "--entrypoint", description: "Replaces the entrypoint"}
+  examples:
+    - {cmd: "docker compose run --rm api python manage.py migrate", description: "One-off database migration"}
+  keywords: [one-off task, migrations, one-off command, job]
+  related: [compose-exec, compose-up]
+
+- id: compose-build
+  tool: docker
+  category: compose
+  name: docker compose build
+  syntax: docker compose build [--no-cache] [--pull] [SERVICE...]
+  summary: Builds images for services with a build section
+  flags:
+    - {flag: "--no-cache", description: "Ignores the cache"}
+    - {flag: "--pull", description: "Pulls updated base images"}
+    - {flag: "--build-arg", description: "Build arguments"}
+  keywords: [build services, build stack, rebuild images]
+  related: [docker-build, compose-up, compose-pull]
+
+- id: compose-pull
+  tool: docker
+  category: compose
+  name: docker compose pull
+  syntax: docker compose pull [SERVICE...]
+  summary: Pulls service images
+  flags:
+    - {flag: "--ignore-pull-failures", description: "Continues even if a pull fails"}
+  keywords: [update images, pull stack images, update stack]
+  related: [compose-up, docker-pull]
+
+- id: compose-restart
+  tool: docker
+  category: compose
+  name: docker compose restart
+  syntax: docker compose restart [-t SECONDI] [SERVICE...]
+  summary: Restarts one or all services (does not reread the Compose file or rebuild)
+  description: To apply changes to the Compose file use up -d, which recreates only changed services.
+  keywords: [restart service, restart stack, ristart compose]
+  related: [compose-up, docker-restart]
+  danger: caution
+
+- id: compose-stop
+  tool: docker
+  category: compose
+  name: docker compose stop
+  syntax: docker compose stop [SERVICE...]
+  summary: Stops services without removing containers and networks
+  keywords: [stop stack, pause services, stop without removing]
+  related: [compose-down, compose-start]
+
+- id: compose-start
+  tool: docker
+  category: compose
+  name: docker compose start
+  syntax: docker compose start [SERVICE...]
+  summary: Starts already-created and stopped services
+  keywords: [ristart stack stopped, riprendi services]
+  related: [compose-stop, compose-up]
+
+- id: compose-config
+  tool: docker
+  category: compose
+  name: docker compose config
+  syntax: docker compose config [--services] [--quiet]
+  summary: Validates and prints the final configuration (resolved variables and overrides)
+  flags:
+    - {flag: "--services", description: "Lists services"}
+    - {flag: "-q, --quiet", description: "Validation only, exit code"}
+    - {flag: "--environment", description: "Shows the environment variables used"}
+  keywords: [validate Compose, debug Compose, resolved variables, YAML lint, merge overrides]
+  related: [compose-up, compose-ps]
+
+- id: compose-rm
+  tool: docker
+  category: compose
+  name: docker compose rm
+  syntax: docker compose rm [-f] [-s] [-v] [SERVICE...]
+  summary: Removes stopped service containers
+  flags:
+    - {flag: "-s, --stop", description: "Stops before removing"}
+    - {flag: "-v", description: "Also removes anonymous volumes"}
+    - {flag: "-f, --force", description: "Without confirmation"}
+  keywords: [remove service, remove Compose containers]
+  related: [compose-down, compose-stop]
+  danger: destructive
+
+- id: compose-ls
+  tool: docker
+  category: compose
+  name: docker compose ls
+  syntax: docker compose ls [-a]
+  summary: Lists all Compose projects on the host
+  keywords: [Compose projects, which stacks, list projects]
+  related: [compose-ps]

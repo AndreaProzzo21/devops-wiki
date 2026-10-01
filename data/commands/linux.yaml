@@ -1,0 +1,1292 @@
+# ======================= NETWORK =======================
+- id: linux-ss
+  tool: linux
+  category: network
+  name: ss
+  syntax: ss [-tulpn] [state STATE]
+  summary: Shows sockets and listening ports (modern replacement for netstat)
+  flags:
+    - {flag: "-t / -u", description: "TCP only / UDP only"}
+    - {flag: "-l", description: "Listening sockets only"}
+    - {flag: "-p", description: "Shows the process (requires root)"}
+    - {flag: "-n", description: "Do not resolve names, show numbers"}
+  examples:
+    - {cmd: "sudo ss -tulpn", description: "All listening ports with process information"}
+    - {cmd: "ss -tn state established", description: "Active TCP connections"}
+  keywords: [open ports, port in use, netstat, listening, socket]
+  related: [linux-lsof]
+
+- id: linux-lsof
+  tool: linux
+  category: network
+  name: lsof
+  syntax: lsof [-i :PORT] [-p PID] [+D DIR]
+  summary: Lists open files and which process is using them
+  flags:
+    - {flag: "-i :PORT", description: "Process using a port"}
+    - {flag: "-p", description: "Files opened by a PID"}
+    - {flag: "+D", description: "Who is using files in a directory"}
+  examples:
+    - {cmd: "sudo lsof -i :8080", description: "Finds who is using port 8080"}
+    - {cmd: "sudo lsof +D /var/log", description: "Processes keeping log files open"}
+  keywords: [open files, who uses port, blocking process, device busy]
+  related: [linux-ss]
+
+- id: linux-ip
+  tool: linux
+  category: network
+  name: ip
+  syntax: ip [addr|link|route|neigh] [COMMAND]
+  summary: Inspects and manages network interfaces, addresses, routes, and neighbors
+  flags:
+    - {flag: "addr", description: "Shows or manages IP addresses"}
+    - {flag: "link", description: "Shows or manages network interfaces"}
+    - {flag: "route", description: "Shows or manages routing tables"}
+    - {flag: "neigh", description: "Shows or manages the neighbor table"}
+  examples:
+    - {cmd: "ip addr show", description: "Lists interfaces and IP addresses"}
+    - {cmd: "ip route show", description: "Shows the routing table"}
+    - {cmd: "ip neigh show", description: "Shows the ARP/NDP neighbor table"}
+  keywords: [ip address, network interface, route, routing table, arp, network config]
+  related: [linux-ss, linux-ping, linux-traceroute]
+
+- id: linux-ping
+  tool: linux
+  category: network
+  name: ping
+  syntax: ping [-c COUNT] [-W TIMEOUT] HOST
+  summary: Tests network reachability using ICMP
+  flags:
+    - {flag: "-c", description: "Number of packets to send"}
+    - {flag: "-W", description: "Timeout in seconds for each reply"}
+    - {flag: "-i", description: "Interval between packets"}
+  examples:
+    - {cmd: "ping -c 4 8.8.8.8", description: "Tests connectivity to an IP address"}
+    - {cmd: "ping -c 4 example.com", description: "Tests connectivity and DNS resolution"}
+  keywords: [connectivity, reachability, icmp, network test, packet loss]
+  related: [linux-ip, linux-traceroute, linux-dig]
+
+- id: linux-traceroute
+  tool: linux
+  category: network
+  name: traceroute
+  syntax: traceroute [-n] [-m MAX_TTL] HOST
+  summary: Shows the network hops taken to reach a host
+  flags:
+    - {flag: "-n", description: "Do not resolve hostnames"}
+    - {flag: "-m", description: "Maximum TTL/hop count"}
+    - {flag: "-w", description: "Wait time for each response"}
+  examples:
+    - {cmd: "traceroute -n example.com", description: "Shows the route without DNS lookups"}
+  keywords: [network path, hops, routing, latency, troubleshooting]
+  related: [linux-ping, linux-mtr]
+
+- id: linux-mtr
+  tool: linux
+  category: network
+  name: mtr
+  syntax: mtr [-r] [-c COUNT] [-n] HOST
+  summary: Combines ping and traceroute for continuous path diagnostics
+  flags:
+    - {flag: "-r", description: "Report mode instead of interactive mode"}
+    - {flag: "-c", description: "Number of cycles in report mode"}
+    - {flag: "-n", description: "Do not resolve hostnames"}
+  examples:
+    - {cmd: "mtr -rw -c 20 example.com", description: "Generates a 20-cycle network diagnostic report"}
+  keywords: [network diagnostic, packet loss, latency, route, hops]
+  related: [linux-ping, linux-traceroute]
+
+- id: linux-dig
+  tool: linux
+  category: network
+  name: dig
+  syntax: dig [@SERVER] NAME [TYPE]
+  summary: Queries DNS records directly
+  flags:
+    - {flag: "@SERVER", description: "Use a specific DNS server"}
+    - {flag: "+short", description: "Show only the concise answer"}
+    - {flag: "+trace", description: "Trace DNS delegation from the root"}
+    - {flag: "TYPE", description: "Record type such as A, AAAA, MX, NS, TXT"}
+  examples:
+    - {cmd: "dig +short example.com A", description: "Gets the IPv4 address"}
+    - {cmd: "dig @1.1.1.1 example.com", description: "Queries Cloudflare DNS directly"}
+    - {cmd: "dig example.com MX", description: "Shows mail exchange records"}
+  keywords: [dns, dns lookup, records, mx, txt, nameserver]
+  related: [linux-ping, linux-curl, linux-host]
+
+- id: linux-curl
+  tool: linux
+  category: network
+  name: curl
+  syntax: curl [OPTIONS] URL
+  summary: Transfers data over HTTP, HTTPS, and many other protocols
+  flags:
+    - {flag: "-I, --head", description: "Fetch headers only"}
+    - {flag: "-s, --silent", description: "Suppress progress and non-error output"}
+    - {flag: "-S, --show-error", description: "Show errors when used with --silent"}
+    - {flag: "-f, --fail", description: "Fail on HTTP errors"}
+    - {flag: "-L, --location", description: "Follow redirects"}
+    - {flag: "-o FILE", description: "Write output to a file"}
+    - {flag: "-H", description: "Add an HTTP header"}
+    - {flag: "-d, --data", description: "Send request data"}
+  examples:
+    - {cmd: "curl -fsS https://example.com/health", description: "Checks an HTTP endpoint and fails on HTTP errors"}
+    - {cmd: "curl -I https://example.com", description: "Inspects response headers"}
+    - {cmd: "curl -H 'Authorization: Bearer TOKEN' https://api.example.com/me", description: "Calls an authenticated API"}
+  keywords: [http, https, api, health check, download, request]
+  related: [linux-wget, linux-dig]
+
+- id: linux-wget
+  tool: linux
+  category: network
+  name: wget
+  syntax: wget [OPTIONS] URL
+  summary: Downloads files over HTTP, HTTPS, or FTP
+  flags:
+    - {flag: "-O FILE", description: "Save output to a specific file"}
+    - {flag: "-q", description: "Quiet mode"}
+    - {flag: "-c", description: "Resume an interrupted download"}
+    - {flag: "-S", description: "Show server response headers"}
+  examples:
+    - {cmd: "wget -O app.tar.gz https://example.com/app.tar.gz", description: "Downloads an artifact to a specific filename"}
+    - {cmd: "wget -c https://example.com/large.iso", description: "Resumes a partially downloaded file"}
+  keywords: [download, file download, artifact, http, ftp]
+  related: [linux-curl]
+
+# ======================= LOGS =======================
+- id: linux-journalctl
+  tool: linux
+  category: logs
+  name: journalctl
+  syntax: journalctl [-u UNIT] [-f] [--since TIME] [-p LEVEL]
+  summary: Reads systemd logs
+  flags:
+    - {flag: "-u", description: "Filter by service"}
+    - {flag: "-f", description: "Follow logs in real time"}
+    - {flag: "--since / --until", description: "Time range"}
+    - {flag: "-p err", description: "Errors or more severe messages only"}
+    - {flag: "-b", description: "Current boot only"}
+  examples:
+    - {cmd: "journalctl -u nginx --since '1 hour ago' -p err", description: "Nginx errors from the last hour"}
+    - {cmd: "journalctl -b -1 -p warning", description: "Warnings from the previous boot"}
+    - {cmd: "journalctl -f -u docker", description: "Follows Docker service logs"}
+  keywords: [service log, systemd log, view logs, errors, boot logs]
+  related: [linux-systemctl, linux-dmesg, linux-tail]
+
+- id: linux-dmesg
+  tool: linux
+  category: logs
+  name: dmesg
+  syntax: dmesg [-T] [-w] [-l LEVEL]
+  summary: Shows messages from the kernel ring buffer
+  flags:
+    - {flag: "-T", description: "Show human-readable timestamps"}
+    - {flag: "-w", description: "Wait for and follow new kernel messages"}
+    - {flag: "-l", description: "Filter by log level"}
+  examples:
+    - {cmd: "dmesg -T | tail -50", description: "Shows the latest kernel messages"}
+    - {cmd: "sudo dmesg -T -l err,warn", description: "Shows kernel warnings and errors"}
+  keywords: [kernel log, boot messages, hardware error, driver error]
+  related: [linux-journalctl, linux-tail]
+
+- id: linux-tail
+  tool: linux
+  category: logs
+  name: tail
+  syntax: tail [-n N] [-f] FILE
+  summary: Shows the end of a file and can follow new lines
+  flags:
+    - {flag: "-n", description: "Number of lines to show"}
+    - {flag: "-f", description: "Follow the file as it grows"}
+    - {flag: "-F", description: "Follow by filename and reopen after rotation"}
+  examples:
+    - {cmd: "tail -n 100 /var/log/syslog", description: "Shows the last 100 log lines"}
+    - {cmd: "tail -F /var/log/nginx/access.log", description: "Follows a log across rotation"}
+  keywords: [tail log, follow log, last lines, log rotation]
+  related: [linux-head, linux-journalctl, linux-grep]
+
+- id: linux-less
+  tool: linux
+  category: logs
+  name: less
+  syntax: less [OPTIONS] FILE
+  summary: Views large text files interactively without loading everything at once
+  flags:
+    - {flag: "-N", description: "Show line numbers"}
+    - {flag: "+F", description: "Follow the file like tail -f"}
+    - {flag: "-S", description: "Do not wrap long lines"}
+  examples:
+    - {cmd: "less +F /var/log/syslog", description: "Follows a log interactively"}
+    - {cmd: "less -N /var/log/nginx/error.log", description: "Views an error log with line numbers"}
+  keywords: [view log, inspect file, large file, pager]
+  related: [linux-tail, linux-grep]
+
+# ======================= SERVICES =======================
+- id: linux-systemctl
+  tool: linux
+  category: services
+  name: systemctl
+  syntax: systemctl start|stop|restart|status|enable|disable UNIT
+  summary: Manages systemd services
+  flags:
+    - {flag: "enable --now", description: "Enable at boot and start immediately"}
+    - {flag: "--failed", description: "Lists failed services (with list-units)"}
+    - {flag: "daemon-reload", description: "Reloads unit files after a change"}
+    - {flag: "is-active", description: "Checks whether a service is currently active"}
+    - {flag: "is-enabled", description: "Checks whether a service is enabled at boot"}
+  examples:
+    - {cmd: "systemctl list-units --failed", description: "Lists failed services"}
+    - {cmd: "sudo systemctl enable --now nginx", description: "Enables and starts nginx"}
+    - {cmd: "sudo systemctl daemon-reload", description: "Reloads unit definitions after editing a service"}
+  keywords: [start service, restart service, service status, daemon, service]
+  related: [linux-journalctl]
+  danger: caution
+
+- id: linux-service
+  tool: linux
+  category: services
+  name: service
+  syntax: service SERVICE [start|stop|restart|status]
+  summary: Controls services through the traditional SysV-compatible interface
+  flags:
+    - {flag: "status", description: "Shows service status"}
+    - {flag: "start", description: "Starts the service"}
+    - {flag: "stop", description: "Stops the service"}
+    - {flag: "restart", description: "Restarts the service"}
+  examples:
+    - {cmd: "sudo service nginx status", description: "Checks nginx status"}
+    - {cmd: "sudo service nginx restart", description: "Restarts nginx"}
+  keywords: [service, start service, stop service, legacy service]
+  related: [linux-systemctl]
+
+# ======================= DISK =======================
+- id: linux-df
+  tool: linux
+  category: disk
+  name: df
+  syntax: df [-h] [-i] [PATH]
+  summary: Shows free space for filesystems
+  flags:
+    - {flag: "-h", description: "Human-readable sizes (GB, MB)"}
+    - {flag: "-i", description: "Shows inodes (disk full despite free space)"}
+    - {flag: "-T", description: "Shows filesystem type"}
+  examples:
+    - {cmd: "df -hT", description: "Shows space and filesystem type for every mount"}
+    - {cmd: "df -ih", description: "Checks inode usage"}
+  keywords: [disk space, disk full, free space, filesystem, inodes]
+  related: [linux-du]
+
+- id: linux-du
+  tool: linux
+  category: disk
+  name: du
+  syntax: du [-sh] [--max-depth=N] PATH
+  summary: Calculates disk usage of files and directories
+  flags:
+    - {flag: "-s", description: "Total only"}
+    - {flag: "-h", description: "Human-readable sizes"}
+    - {flag: "--max-depth", description: "Detail depth"}
+  examples:
+    - {cmd: "sudo du -h --max-depth=1 /var | sort -rh | head", description: "Largest directories in /var"}
+    - {cmd: "du -sh /var/lib/docker", description: "Total Docker data usage"}
+  keywords: [large directories, what uses space, directory size, disk usage]
+  related: [linux-df, linux-sort]
+
+- id: linux-lsblk
+  tool: linux
+  category: disk
+  name: lsblk
+  syntax: lsblk [-f] [-o COLUMNS]
+  summary: Lists block devices, partitions, filesystems, and mount points
+  flags:
+    - {flag: "-f", description: "Shows filesystem information"}
+    - {flag: "-o", description: "Selects output columns"}
+    - {flag: "-p", description: "Shows full device paths"}
+  examples:
+    - {cmd: "lsblk -f", description: "Shows disks, filesystems, UUIDs, and mount points"}
+    - {cmd: "lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINTS", description: "Useful storage overview"}
+  keywords: [disk, partition, block device, mount point, filesystem]
+  related: [linux-df, linux-mount, linux-blkid]
+
+- id: linux-blkid
+  tool: linux
+  category: disk
+  name: blkid
+  syntax: blkid [DEVICE]
+  summary: Prints block device attributes such as UUID and filesystem type
+  flags:
+    - {flag: "-o", description: "Selects output format"}
+    - {flag: "-s", description: "Shows only a selected tag"}
+  examples:
+    - {cmd: "sudo blkid", description: "Lists UUIDs and filesystem types for block devices"}
+    - {cmd: "sudo blkid /dev/sdb1", description: "Inspects one partition"}
+  keywords: [uuid, filesystem type, partition, disk identification]
+  related: [linux-lsblk, linux-mount]
+
+- id: linux-mount
+  tool: linux
+  category: disk
+  name: mount
+  syntax: mount [-t TYPE] DEVICE DIR
+  summary: Mounts a filesystem at a directory
+  flags:
+    - {flag: "-t", description: "Specifies the filesystem type"}
+    - {flag: "-a", description: "Mounts all filesystems from /etc/fstab"}
+    - {flag: "-o", description: "Specifies mount options"}
+  examples:
+    - {cmd: "sudo mount /dev/sdb1 /mnt/data", description: "Mounts a partition at /mnt/data"}
+    - {cmd: "mount | grep /mnt/data", description: "Checks whether /mnt/data is mounted"}
+  keywords: [mount disk, filesystem mount, fstab, attach volume]
+  related: [linux-umount, linux-lsblk, linux-blkid]
+  danger: caution
+
+- id: linux-umount
+  tool: linux
+  category: disk
+  name: umount
+  syntax: umount [-l] MOUNTPOINT|DEVICE
+  summary: Unmounts a filesystem
+  flags:
+    - {flag: "-l", description: "Lazy unmount when the filesystem is busy"}
+    - {flag: "-f", description: "Force unmount where supported"}
+  examples:
+    - {cmd: "sudo umount /mnt/data", description: "Unmounts a filesystem"}
+    - {cmd: "sudo lsof +D /mnt/data", description: "Finds processes preventing an unmount"}
+  keywords: [unmount, detach disk, busy filesystem, mount]
+  related: [linux-mount, linux-lsof]
+  danger: caution
+
+- id: linux-fdisk
+  tool: linux
+  category: disk
+  name: fdisk
+  syntax: fdisk [-l] [DEVICE]
+  summary: Inspects and manages disk partition tables
+  flags:
+    - {flag: "-l", description: "Lists partition tables"}
+    - {flag: "DEVICE", description: "Disk device to inspect or modify"}
+  examples:
+    - {cmd: "sudo fdisk -l", description: "Lists disks and partitions"}
+  keywords: [partition, partition table, disk layout, mbr, gpt]
+  related: [linux-lsblk, linux-parted]
+  danger: destructive
+
+# ======================= FILES =======================
+- id: linux-find
+  tool: linux
+  category: files
+  name: find
+  syntax: find PATH [-name PAT] [-type f|d] [-mtime N] [-size N] [-exec CMD {} +]
+  summary: Searches for files by name, type, date, or size
+  flags:
+    - {flag: "-name / -iname", description: "Name (iname ignores case)"}
+    - {flag: "-mtime", description: "Modified N days ago (+N means older)"}
+    - {flag: "-size", description: "Size, e.g. +100M"}
+    - {flag: "-exec", description: "Executes a command on results"}
+    - {flag: "-delete", description: "Deletes matching files"}
+  examples:
+    - {cmd: "find /var/log -name '*.log' -mtime +30 -size +50M", description: "Old and large log files"}
+    - {cmd: "find /tmp -type f -mtime +7 -delete", description: "Deletes files older than seven days in /tmp"}
+  keywords: [find file, search file, file search, old files, large files]
+  related: [linux-locate, linux-xargs]
+  danger: caution
+
+- id: linux-locate
+  tool: linux
+  category: files
+  name: locate
+  syntax: locate [PATTERN]
+  summary: Quickly searches a prebuilt file-name database
+  flags:
+    - {flag: "-i", description: "Case-insensitive search"}
+    - {flag: "-r", description: "Search using a regular expression"}
+  examples:
+    - {cmd: "locate nginx.conf", description: "Finds paths matching nginx.conf"}
+    - {cmd: "locate -i docker-compose.yml", description: "Case-insensitive filename search"}
+  keywords: [find file, locate file, filename search, fast search]
+  related: [linux-find, linux-updatedb]
+
+- id: linux-grep
+  tool: linux
+  category: files
+  name: grep
+  syntax: grep [-rinE] PATTERN [FILE...]
+  summary: Searches text using patterns and regular expressions
+  flags:
+    - {flag: "-r, --recursive", description: "Searches directories recursively"}
+    - {flag: "-i", description: "Ignores case"}
+    - {flag: "-n", description: "Shows line numbers"}
+    - {flag: "-E", description: "Uses extended regular expressions"}
+    - {flag: "-v", description: "Shows non-matching lines"}
+  examples:
+    - {cmd: "grep -Rni 'error' /var/log", description: "Searches error messages recursively"}
+    - {cmd: "grep -nE 'ERROR|WARN' app.log", description: "Finds ERROR or WARN lines"}
+  keywords: [search text, regex, logs, find string, search files]
+  related: [linux-ripgrep, linux-find, linux-awk]
+
+- id: linux-ripgrep
+  tool: linux
+  category: files
+  name: rg
+  syntax: rg [OPTIONS] PATTERN [PATH]
+  summary: Fast recursive text search that respects ignore files
+  flags:
+    - {flag: "-n", description: "Shows line numbers"}
+    - {flag: "-i", description: "Ignores case"}
+    - {flag: "-g", description: "Filters files by glob"}
+    - {flag: "--hidden", description: "Includes hidden files"}
+  examples:
+    - {cmd: "rg -n 'TODO|FIXME' .", description: "Finds TODO and FIXME markers in the project"}
+    - {cmd: "rg -n -g '*.yaml' 'image:' .", description: "Searches image declarations in YAML files"}
+  keywords: [fast grep, search code, regex, recursive search]
+  related: [linux-grep, linux-find]
+
+- id: linux-xargs
+  tool: linux
+  category: files
+  name: xargs
+  syntax: xargs [OPTIONS] COMMAND
+  summary: Builds command lines from standard input
+  flags:
+    - {flag: "-0", description: "Reads NUL-separated input"}
+    - {flag: "-n", description: "Uses a maximum number of arguments per command"}
+    - {flag: "-P", description: "Runs multiple commands in parallel"}
+  examples:
+    - {cmd: "find . -name '*.log' -print0 | xargs -0 rm", description: "Removes matching log files safely with spaces in names"}
+    - {cmd: "printf '%s\\n' a b c | xargs -n1 echo", description: "Runs a command once per input item"}
+  keywords: [pipe arguments, batch command, parallel command, stdin]
+  related: [linux-find, linux-exec]
+
+- id: linux-tar
+  tool: linux
+  category: files
+  name: tar
+  syntax: tar [-c|-x|-t] [-z|-j|-J] [-f FILE] [PATH...]
+  summary: Creates, lists, and extracts tar archives
+  flags:
+    - {flag: "-c", description: "Creates an archive"}
+    - {flag: "-x", description: "Extracts an archive"}
+    - {flag: "-t", description: "Lists archive contents"}
+    - {flag: "-z", description: "Uses gzip compression"}
+    - {flag: "-f", description: "Specifies the archive file"}
+  examples:
+    - {cmd: "tar -czf backup.tar.gz /etc/myapp", description: "Creates a gzip-compressed archive"}
+    - {cmd: "tar -xzf backup.tar.gz -C /tmp/restore", description: "Extracts an archive into a directory"}
+    - {cmd: "tar -tzf backup.tar.gz", description: "Lists archive contents without extracting"}
+  keywords: [tar, archive, backup, extract, gzip, compress]
+  related: [linux-gzip, linux-rsync]
+
+- id: linux-rsync
+  tool: linux
+  category: files
+  name: rsync
+  syntax: rsync [-avh] [--delete] SRC DEST
+  summary: Efficiently synchronizes files and directories
+  flags:
+    - {flag: "-a", description: "Archive mode, preserves common metadata"}
+    - {flag: "-v", description: "Verbose output"}
+    - {flag: "-h", description: "Human-readable sizes"}
+    - {flag: "--delete", description: "Deletes destination files missing from source"}
+    - {flag: "--dry-run", description: "Shows what would be changed"}
+  examples:
+    - {cmd: "rsync -avh ./app/ server:/srv/app/", description: "Synchronizes an application directory to a remote host"}
+    - {cmd: "rsync -avhn --delete ./data/ /backup/data/", description: "Previews a mirror synchronization"}
+  keywords: [sync files, copy files, backup, remote sync, mirror]
+  related: [linux-ssh, linux-scp]
+  danger: caution
+
+- id: linux-chmod
+  tool: linux
+  category: files
+  name: chmod
+  syntax: chmod [-R] MODE FILE...
+  summary: Changes file and directory permissions
+  flags:
+    - {flag: "-R", description: "Applies recursively"}
+    - {flag: "u/g/o", description: "Targets user, group, or others"}
+    - {flag: "+/-/=", description: "Adds, removes, or sets permissions"}
+  examples:
+    - {cmd: "chmod 640 app.env", description: "Sets owner read/write and group read permissions"}
+    - {cmd: "chmod +x deploy.sh", description: "Makes a script executable"}
+    - {cmd: "chmod -R u=rwX,g=rX,o= /srv/app", description: "Sets controlled recursive permissions"}
+  keywords: [permissions, executable, file mode, access rights]
+  related: [linux-chown, linux-umask]
+
+- id: linux-chown
+  tool: linux
+  category: files
+  name: chown
+  syntax: chown [-R] USER[:GROUP] FILE...
+  summary: Changes file and directory ownership
+  flags:
+    - {flag: "-R", description: "Applies recursively"}
+    - {flag: "USER:GROUP", description: "Sets owner and group"}
+    - {flag: "--reference", description: "Copies ownership from another file"}
+  examples:
+    - {cmd: "sudo chown app:app /srv/app/app.conf", description: "Sets the application user and group"}
+    - {cmd: "sudo chown -R www-data:www-data /var/www/app", description: "Changes ownership recursively"}
+  keywords: [file owner, group owner, permissions, ownership]
+  related: [linux-chmod, linux-stat]
+  danger: caution
+
+- id: linux-ln
+  tool: linux
+  category: files
+  name: ln
+  syntax: ln [-s] TARGET LINK_NAME
+  summary: Creates hard or symbolic links
+  flags:
+    - {flag: "-s", description: "Creates a symbolic link"}
+    - {flag: "-f", description: "Replaces an existing destination where supported"}
+    - {flag: "-n", description: "Treats a destination symlink as a normal file"}
+  examples:
+    - {cmd: "ln -s /opt/app/releases/current /srv/app", description: "Creates a symlink to the current release"}
+    - {cmd: "ln -s /etc/nginx/sites-available/app /etc/nginx/sites-enabled/app", description: "Enables an nginx site using a symlink"}
+  keywords: [symlink, symbolic link, hard link, current release]
+  related: [linux-readlink, linux-cp]
+
+# ======================= PROCESSES =======================
+- id: linux-ps
+  tool: linux
+  category: processes
+  name: ps
+  syntax: ps aux | ps -ef
+  summary: Lists running processes
+  flags:
+    - {flag: "aux", description: "BSD-style process listing with resource usage"}
+    - {flag: "-ef", description: "Full process listing in standard format"}
+    - {flag: "--forest", description: "Shows parent-child process relationships"}
+  examples:
+    - {cmd: "ps aux --sort=-%mem | head", description: "Processes using the most memory"}
+    - {cmd: "ps -ef --forest", description: "Shows the process tree"}
+  keywords: [process list, running process, pid, process tree]
+  related: [linux-top, linux-pgrep, linux-kill]
+
+- id: linux-top
+  tool: linux
+  category: processes
+  name: top
+  syntax: top [-p PID]
+  summary: Monitors processes and system resource usage interactively
+  flags:
+    - {flag: "-p", description: "Monitors specific PIDs"}
+    - {flag: "-b", description: "Batch mode for scripts or capture"}
+    - {flag: "-n", description: "Number of refresh iterations"}
+  examples:
+    - {cmd: "top", description: "Interactive CPU and memory monitoring"}
+    - {cmd: "top -b -n 1 | head -30", description: "Captures a one-shot process snapshot"}
+  keywords: [cpu usage, memory usage, process monitor, load]
+  related: [linux-ps, linux-free, linux-vmstat]
+
+- id: linux-pgrep
+  tool: linux
+  category: processes
+  name: pgrep
+  syntax: pgrep [-a] [-f] PATTERN
+  summary: Finds process IDs matching a name or pattern
+  flags:
+    - {flag: "-a", description: "Shows the full command line"}
+    - {flag: "-f", description: "Matches against the full command line"}
+    - {flag: "-u", description: "Filters by user"}
+  examples:
+    - {cmd: "pgrep -af 'java.*app.jar'", description: "Finds Java processes running the application"}
+    - {cmd: "pgrep -u deploy nginx", description: "Finds nginx processes owned by deploy"}
+  keywords: [find process, pid, process id, running command]
+  related: [linux-ps, linux-pkill, linux-kill]
+
+- id: linux-pkill
+  tool: linux
+  category: processes
+  name: pkill
+  syntax: pkill [-SIGNAL] [-f] PATTERN
+  summary: Sends a signal to processes matching a pattern
+  flags:
+    - {flag: "-TERM", description: "Requests graceful termination"}
+    - {flag: "-KILL", description: "Forces immediate termination"}
+    - {flag: "-f", description: "Matches against the full command line"}
+  examples:
+    - {cmd: "pkill -TERM -f 'worker.py'", description: "Gracefully stops matching workers"}
+    - {cmd: "pkill -KILL -f 'stuck-worker'", description: "Force-stops a stuck process"}
+  keywords: [kill process, stop process, signal, terminate process]
+  related: [linux-pgrep, linux-kill]
+  danger: caution
+
+- id: linux-kill
+  tool: linux
+  category: processes
+  name: kill
+  syntax: kill [-SIGNAL] PID...
+  summary: Sends a signal to one or more processes
+  flags:
+    - {flag: "-TERM", description: "Requests graceful termination"}
+    - {flag: "-KILL", description: "Forces immediate termination"}
+    - {flag: "-HUP", description: "Commonly used to request configuration reloads"}
+    - {flag: "-0", description: "Checks whether a process exists without sending a signal"}
+  examples:
+    - {cmd: "kill -TERM 1234", description: "Requests graceful shutdown of PID 1234"}
+    - {cmd: "kill -0 1234", description: "Checks whether PID 1234 exists and is accessible"}
+  keywords: [send signal, terminate process, pid, graceful shutdown]
+  related: [linux-ps, linux-pgrep, linux-pkill]
+  danger: caution
+
+- id: linux-free
+  tool: linux
+  category: processes
+  name: free
+  syntax: free [-h] [-m] [-g]
+  summary: Shows RAM and swap usage
+  flags:
+    - {flag: "-h", description: "Human-readable output"}
+    - {flag: "-m", description: "Show values in MiB"}
+    - {flag: "-g", description: "Show values in GiB"}
+  examples:
+    - {cmd: "free -h", description: "Shows total, used, free, and available memory"}
+  keywords: [ram, memory, swap, out of memory]
+  related: [linux-top, linux-vmstat]
+
+- id: linux-vmstat
+  tool: linux
+  category: processes
+  name: vmstat
+  syntax: vmstat [-w] [INTERVAL [COUNT]]
+  summary: Reports memory, process, CPU, and I/O statistics
+  flags:
+    - {flag: "-w", description: "Wide output"}
+    - {flag: "INTERVAL", description: "Refresh interval in seconds"}
+    - {flag: "COUNT", description: "Number of reports"}
+  examples:
+    - {cmd: "vmstat 1 10", description: "Collects ten one-second system snapshots"}
+  keywords: [system metrics, cpu, memory, io, load]
+  related: [linux-top, linux-free, linux-iostat]
+
+# ======================= CPU / PERFORMANCE =======================
+- id: linux-iostat
+  tool: linux
+  category: performance
+  name: iostat
+  syntax: iostat [-xz] [INTERVAL [COUNT]]
+  summary: Reports CPU and disk I/O statistics
+  flags:
+    - {flag: "-x", description: "Extended device statistics"}
+    - {flag: "-z", description: "Omits devices with no activity"}
+    - {flag: "-d", description: "Device statistics only"}
+  examples:
+    - {cmd: "iostat -xz 1 5", description: "Collects detailed disk I/O statistics"}
+  keywords: [disk io, io wait, cpu, performance, latency]
+  related: [linux-vmstat, linux-iotop]
+
+- id: linux-iotop
+  tool: linux
+  category: performance
+  name: iotop
+  syntax: iotop [-o] [-P] [-a]
+  summary: Shows processes responsible for disk I/O
+  flags:
+    - {flag: "-o", description: "Shows only processes performing I/O"}
+    - {flag: "-P", description: "Shows I/O by process instead of thread"}
+    - {flag: "-a", description: "Shows accumulated I/O"}
+  examples:
+    - {cmd: "sudo iotop -oPa", description: "Shows active disk I/O by process"}
+  keywords: [disk io, process io, disk bottleneck, performance]
+  related: [linux-iostat, linux-ps]
+
+- id: linux-nice
+  tool: linux
+  category: performance
+  name: nice
+  syntax: nice [-n ADJUSTMENT] COMMAND
+  summary: Runs a command with an adjusted CPU scheduling priority
+  flags:
+    - {flag: "-n", description: "Adds a nice value to the default priority"}
+  examples:
+    - {cmd: "nice -n 10 ./backup.sh", description: "Runs a backup with lower CPU scheduling priority"}
+  keywords: [cpu priority, scheduling, background workload, nice]
+  related: [linux-renice]
+
+- id: linux-renice
+  tool: linux
+  category: performance
+  name: renice
+  syntax: renice [-n VALUE] [-p PID...]
+  summary: Changes the scheduling priority of running processes
+  flags:
+    - {flag: "-n", description: "Sets the new nice value"}
+    - {flag: "-p", description: "Targets process IDs"}
+    - {flag: "-u", description: "Targets processes owned by a user"}
+  examples:
+    - {cmd: "sudo renice -n 10 -p 1234", description: "Lowers the scheduling priority of a running process"}
+  keywords: [change priority, cpu priority, process scheduling]
+  related: [linux-nice, linux-top]
+  danger: caution
+
+# ======================= MEMORY / SYSTEM =======================
+- id: linux-uptime
+  tool: linux
+  category: system
+  name: uptime
+  syntax: uptime
+  summary: Shows system uptime, current time, logged-in users, and load average
+  flags: []
+  examples:
+    - {cmd: "uptime", description: "Quick system health and load overview"}
+  keywords: [uptime, load average, system health]
+  related: [linux-w, linux-top]
+
+- id: linux-uname
+  tool: linux
+  category: system
+  name: uname
+  syntax: uname [-a]
+  summary: Shows kernel and system information
+  flags:
+    - {flag: "-a", description: "Shows all available system information"}
+    - {flag: "-r", description: "Shows kernel release"}
+    - {flag: "-m", description: "Shows machine architecture"}
+  examples:
+    - {cmd: "uname -a", description: "Shows kernel, hostname, architecture, and related information"}
+  keywords: [kernel version, os info, architecture, system info]
+  related: [linux-lsb_release, linux-hostname]
+
+- id: linux-hostnamectl
+  tool: linux
+  category: system
+  name: hostnamectl
+  syntax: hostnamectl [status|set-hostname NAME]
+  summary: Shows or changes the system hostname and related OS information
+  flags:
+    - {flag: "status", description: "Shows hostname and operating system information"}
+    - {flag: "set-hostname", description: "Changes the system hostname"}
+  examples:
+    - {cmd: "hostnamectl status", description: "Shows hostname and OS information"}
+    - {cmd: "sudo hostnamectl set-hostname worker-01", description: "Sets the hostname"}
+  keywords: [hostname, server name, os info, machine identity]
+  related: [linux-uname]
+
+- id: linux-lscpu
+  tool: linux
+  category: system
+  name: lscpu
+  syntax: lscpu
+  summary: Shows CPU architecture and topology information
+  flags: []
+  examples:
+    - {cmd: "lscpu", description: "Shows CPU model, cores, threads, and virtualization information"}
+  keywords: [cpu info, cores, threads, architecture, virtualization]
+  related: [linux-uname, linux-nproc]
+
+- id: linux-nproc
+  tool: linux
+  category: system
+  name: nproc
+  syntax: nproc [--all]
+  summary: Prints the number of available processing units
+  flags:
+    - {flag: "--all", description: "Shows the number of installed processing units"}
+  examples:
+    - {cmd: "nproc", description: "Shows CPUs available to the current process"}
+  keywords: [cpu count, cores, parallel jobs]
+  related: [linux-lscpu]
+
+# ======================= TEXT / SHELL =======================
+- id: linux-awk
+  tool: linux
+  category: shell
+  name: awk
+  syntax: awk 'PROGRAM' [FILE...]
+  summary: Processes and transforms structured text line by line
+  flags:
+    - {flag: "-F", description: "Sets the input field separator"}
+    - {flag: "-v", description: "Defines a variable before processing"}
+  examples:
+    - {cmd: "awk '{print $1}' access.log", description: "Prints the first whitespace-separated field"}
+    - {cmd: "awk -F: '{print $1}' /etc/passwd", description: "Prints usernames from /etc/passwd"}
+  keywords: [text processing, fields, csv, parsing, shell scripting]
+  related: [linux-sed, linux-cut, linux-sort]
+
+- id: linux-sed
+  tool: linux
+  category: shell
+  name: sed
+  syntax: sed [OPTIONS] 'SCRIPT' [FILE...]
+  summary: Performs stream-based text transformations
+  flags:
+    - {flag: "-n", description: "Suppresses automatic printing"}
+    - {flag: "-E", description: "Uses extended regular expressions"}
+    - {flag: "-i", description: "Edits files in place"}
+  examples:
+    - {cmd: "sed -n '1,20p' app.log", description: "Prints lines 1 through 20"}
+    - {cmd: "sed -E 's/[0-9]+/N/g' input.txt", description: "Replaces numeric sequences with N"}
+  keywords: [replace text, edit file, regex, stream editor]
+  related: [linux-awk, linux-grep]
+
+- id: linux-cut
+  tool: linux
+  category: shell
+  name: cut
+  syntax: cut [-d DELIM] [-f LIST] [FILE]
+  summary: Extracts selected columns or character ranges from text
+  flags:
+    - {flag: "-d", description: "Sets the field delimiter"}
+    - {flag: "-f", description: "Selects fields"}
+    - {flag: "-c", description: "Selects character positions"}
+  examples:
+    - {cmd: "cut -d: -f1 /etc/passwd", description: "Extracts usernames"}
+    - {cmd: "cut -d, -f1,3 data.csv", description: "Extracts CSV columns 1 and 3"}
+  keywords: [columns, fields, csv, text extraction]
+  related: [linux-awk, linux-sort]
+
+- id: linux-sort
+  tool: linux
+  category: shell
+  name: sort
+  syntax: sort [-n|-h|-r] [FILE]
+  summary: Sorts lines of text
+  flags:
+    - {flag: "-n", description: "Numeric sort"}
+    - {flag: "-h", description: "Human-readable numeric sort"}
+    - {flag: "-r", description: "Reverse order"}
+    - {flag: "-u", description: "Unique lines only"}
+  examples:
+    - {cmd: "du -h --max-depth=1 /var | sort -rh", description: "Sorts directories by human-readable size"}
+    - {cmd: "sort -u users.txt", description: "Sorts and removes duplicate lines"}
+  keywords: [sort text, numeric sort, largest files, unique lines]
+  related: [linux-uniq, linux-awk]
+
+- id: linux-uniq
+  tool: linux
+  category: shell
+  name: uniq
+  syntax: uniq [-c|-d|-u] [FILE]
+  summary: Filters or counts adjacent duplicate lines
+  flags:
+    - {flag: "-c", description: "Counts occurrences"}
+    - {flag: "-d", description: "Shows duplicated lines only"}
+    - {flag: "-u", description: "Shows unique lines only"}
+  examples:
+    - {cmd: "sort access.log | uniq -c | sort -nr | head", description: "Finds the most frequent log lines"}
+  keywords: [duplicates, count lines, frequency, text statistics]
+  related: [linux-sort, linux-awk]
+
+- id: linux-wc
+  tool: linux
+  category: shell
+  name: wc
+  syntax: wc [-l|-w|-c] [FILE]
+  summary: Counts lines, words, and bytes
+  flags:
+    - {flag: "-l", description: "Counts lines"}
+    - {flag: "-w", description: "Counts words"}
+    - {flag: "-c", description: "Counts bytes"}
+  examples:
+    - {cmd: "wc -l /var/log/app.log", description: "Counts log lines"}
+    - {cmd: "find . -type f | wc -l", description: "Counts files recursively"}
+  keywords: [count lines, count files, word count, statistics]
+  related: [linux-find, linux-grep]
+
+- id: linux-head
+  tool: linux
+  category: shell
+  name: head
+  syntax: head [-n N] [FILE]
+  summary: Shows the beginning of a file or command output
+  flags:
+    - {flag: "-n", description: "Number of lines to show"}
+    - {flag: "-c", description: "Number of bytes to show"}
+  examples:
+    - {cmd: "head -n 20 app.log", description: "Shows the first 20 lines"}
+    - {cmd: "ps aux | head", description: "Shows the first process entries"}
+  keywords: [first lines, preview file, command output]
+  related: [linux-tail, linux-less]
+
+# ======================= ARCHIVE / COMPRESSION =======================
+- id: linux-gzip
+  tool: linux
+  category: archive
+  name: gzip
+  syntax: gzip [-d] [-k] FILE...
+  summary: Compresses or decompresses files using gzip
+  flags:
+    - {flag: "-d", description: "Decompresses"}
+    - {flag: "-k", description: "Keeps the original file"}
+    - {flag: "-c", description: "Writes compressed data to standard output"}
+  examples:
+    - {cmd: "gzip -k access.log", description: "Compresses a log while keeping the original"}
+    - {cmd: "gzip -d backup.gz", description: "Decompresses a gzip file"}
+  keywords: [gzip, compress, decompress, log compression]
+  related: [linux-gunzip, linux-tar]
+
+- id: linux-zgrep
+  tool: linux
+  category: archive
+  name: zgrep
+  syntax: zgrep [OPTIONS] PATTERN FILE.gz
+  summary: Searches text directly inside gzip-compressed files
+  flags:
+    - {flag: "-i", description: "Ignores case"}
+    - {flag: "-n", description: "Shows line numbers"}
+    - {flag: "-E", description: "Uses extended regular expressions"}
+  examples:
+    - {cmd: "zgrep -n 'ERROR' /var/log/app.log.2.gz", description: "Searches errors inside a compressed log"}
+  keywords: [compressed logs, search gzip, zgrep, log analysis]
+  related: [linux-grep, linux-gzip]
+
+# ======================= SSH / REMOTE =======================
+- id: linux-ssh
+  tool: linux
+  category: remote
+  name: ssh
+  syntax: ssh [-p PORT] [-i KEY] [USER@]HOST [COMMAND]
+  summary: Connects to a remote host over SSH
+  flags:
+    - {flag: "-p", description: "Remote SSH port"}
+    - {flag: "-i", description: "Identity/private key file"}
+    - {flag: "-L", description: "Local port forwarding"}
+    - {flag: "-R", description: "Remote port forwarding"}
+    - {flag: "-N", description: "Do not execute a remote command"}
+  examples:
+    - {cmd: "ssh deploy@server.example.com", description: "Opens an interactive SSH session"}
+    - {cmd: "ssh -L 8080:localhost:8080 user@server", description: "Forwards a local port to a remote service"}
+    - {cmd: "ssh user@server 'systemctl status nginx --no-pager'", description: "Runs a remote command"}
+  keywords: [ssh, remote shell, port forwarding, server access]
+  related: [linux-scp, linux-rsync]
+
+- id: linux-scp
+  tool: linux
+  category: remote
+  name: scp
+  syntax: scp [-P PORT] [-i KEY] SRC [USER@]HOST:DEST
+  summary: Copies files between local and remote hosts over SSH
+  flags:
+    - {flag: "-P", description: "Remote SSH port"}
+    - {flag: "-i", description: "Identity/private key file"}
+    - {flag: "-r", description: "Copies directories recursively"}
+  examples:
+    - {cmd: "scp app.tar.gz deploy@server:/tmp/", description: "Uploads an archive to a remote host"}
+    - {cmd: "scp deploy@server:/var/log/app.log ./", description: "Downloads a remote log"}
+  keywords: [copy remote file, upload, download, ssh, scp]
+  related: [linux-ssh, linux-rsync]
+
+# ======================= USERS / PERMISSIONS =======================
+- id: linux-id
+  tool: linux
+  category: users
+  name: id
+  syntax: id [USER]
+  summary: Shows user and group IDs
+  flags:
+    - {flag: "-u", description: "Shows user ID only"}
+    - {flag: "-g", description: "Shows primary group ID only"}
+    - {flag: "-G", description: "Shows all group IDs"}
+    - {flag: "-n", description: "Shows names instead of numeric IDs"}
+  examples:
+    - {cmd: "id", description: "Shows the current user's UID, GID, and groups"}
+    - {cmd: "id deploy", description: "Shows identity and groups for deploy"}
+  keywords: [uid, gid, groups, user identity, permissions]
+  related: [linux-whoami, linux-groups]
+
+- id: linux-whoami
+  tool: linux
+  category: users
+  name: whoami
+  syntax: whoami
+  summary: Prints the effective current username
+  flags: []
+  examples:
+    - {cmd: "whoami", description: "Shows which user is running the command"}
+    - {cmd: "sudo whoami", description: "Confirms the effective user under sudo"}
+  keywords: [current user, username, effective user, sudo]
+  related: [linux-id, linux-groups]
+
+- id: linux-groups
+  tool: linux
+  category: users
+  name: groups
+  syntax: groups [USER]
+  summary: Shows the groups a user belongs to
+  flags: []
+  examples:
+    - {cmd: "groups deploy", description: "Shows groups for the deploy user"}
+  keywords: [user groups, permissions, membership]
+  related: [linux-id, linux-usermod]
+
+- id: linux-useradd
+  tool: linux
+  category: users
+  name: useradd
+  syntax: useradd [OPTIONS] USER
+  summary: Creates a local user account
+  flags:
+    - {flag: "-m", description: "Creates the home directory"}
+    - {flag: "-s", description: "Sets the login shell"}
+    - {flag: "-G", description: "Adds the user to supplementary groups"}
+  examples:
+    - {cmd: "sudo useradd -m -s /bin/bash deploy", description: "Creates a deploy user with a home directory"}
+  keywords: [create user, linux user, account, deploy user]
+  related: [linux-usermod, linux-passwd]
+  danger: caution
+
+- id: linux-usermod
+  tool: linux
+  category: users
+  name: usermod
+  syntax: usermod [OPTIONS] USER
+  summary: Modifies an existing user account
+  flags:
+    - {flag: "-aG", description: "Appends the user to supplementary groups"}
+    - {flag: "-s", description: "Changes the login shell"}
+    - {flag: "-L / -U", description: "Locks / unlocks the account"}
+  examples:
+    - {cmd: "sudo usermod -aG docker deploy", description: "Adds deploy to the docker group"}
+  keywords: [modify user, add group, lock account, unlock account]
+  related: [linux-useradd, linux-groups]
+  danger: caution
+
+- id: linux-passwd
+  tool: linux
+  category: users
+  name: passwd
+  syntax: passwd [USER]
+  summary: Changes a user's password
+  flags:
+    - {flag: "-l / -u", description: "Locks / unlocks the password"}
+    - {flag: "-S", description: "Shows password status"}
+  examples:
+    - {cmd: "sudo passwd deploy", description: "Changes the deploy user's password"}
+  keywords: [password, user password, lock account, authentication]
+  related: [linux-usermod]
+  danger: caution
+
+# ======================= SECURITY / SYSTEM =======================
+- id: linux-sudo
+  tool: linux
+  category: security
+  name: sudo
+  syntax: sudo [OPTIONS] COMMAND
+  summary: Runs a command with elevated privileges according to sudo policy
+  flags:
+    - {flag: "-u USER", description: "Runs the command as another user"}
+    - {flag: "-l", description: "Lists the current user's sudo permissions"}
+    - {flag: "-n", description: "Never prompts for a password"}
+  examples:
+    - {cmd: "sudo -l", description: "Checks which commands the current user may run with sudo"}
+    - {cmd: "sudo -u postgres psql", description: "Runs psql as the postgres user"}
+  keywords: [root, privilege escalation, sudo, admin command]
+  related: [linux-su, linux-id]
+  danger: caution
+
+- id: linux-visudo
+  tool: linux
+  category: security
+  name: visudo
+  syntax: visudo [-c]
+  summary: Safely edits and validates the sudoers configuration
+  flags:
+    - {flag: "-c", description: "Checks syntax without editing"}
+    - {flag: "-f", description: "Uses an alternative sudoers file"}
+  examples:
+    - {cmd: "sudo visudo", description: "Safely edits the sudoers configuration"}
+    - {cmd: "sudo visudo -c", description: "Validates sudoers syntax"}
+  keywords: [sudoers, sudo config, permissions, admin access]
+  related: [linux-sudo]
+  danger: caution
+
+# ======================= ENVIRONMENT / SHELL =======================
+- id: linux-env
+  tool: linux
+  category: shell
+  name: env
+  syntax: env [OPTION] [NAME=VALUE] [COMMAND]
+  summary: Displays or modifies the environment for a command
+  flags:
+    - {flag: "-i", description: "Starts with an empty environment"}
+    - {flag: "NAME=VALUE", description: "Sets an environment variable"}
+  examples:
+    - {cmd: "env | sort", description: "Lists environment variables alphabetically"}
+    - {cmd: "env APP_ENV=production ./app", description: "Runs a command with a temporary environment variable"}
+  keywords: [environment variables, env vars, configuration, shell]
+  related: [linux-printenv, linux-export]
+
+- id: linux-export
+  tool: linux
+  category: shell
+  name: export
+  syntax: export NAME[=VALUE]
+  summary: Sets environment variables exported to child processes
+  flags: []
+  examples:
+    - {cmd: "export APP_ENV=production", description: "Exports an environment variable for the current shell and child processes"}
+    - {cmd: "export PATH=\"$PATH:/opt/bin\"", description: "Extends PATH for the current shell"}
+  keywords: [environment variable, export variable, path, shell]
+  related: [linux-env, linux-printenv]
+
+- id: linux-printenv
+  tool: linux
+  category: shell
+  name: printenv
+  syntax: printenv [VARIABLE]
+  summary: Prints environment variables
+  flags:
+    - {flag: "VARIABLE", description: "Prints only the selected variable"}
+  examples:
+    - {cmd: "printenv PATH", description: "Shows the current PATH"}
+    - {cmd: "printenv HOME", description: "Shows the current home directory"}
+  keywords: [environment variables, path, shell variables]
+  related: [linux-env, linux-export]
+
+# ======================= SCHEDULING =======================
+- id: linux-crontab
+  tool: linux
+  category: scheduling
+  name: crontab
+  syntax: crontab [-l|-e|-r] [USER]
+  summary: Manages per-user cron schedules
+  flags:
+    - {flag: "-l", description: "Lists the current crontab"}
+    - {flag: "-e", description: "Edits the current crontab"}
+    - {flag: "-r", description: "Removes the current crontab"}
+  examples:
+    - {cmd: "crontab -l", description: "Lists scheduled jobs for the current user"}
+    - {cmd: "crontab -e", description: "Edits the current user's scheduled jobs"}
+  keywords: [cron, scheduled job, recurring task, automation]
+  related: [linux-systemctl]
+
+- id: linux-at
+  tool: linux
+  category: scheduling
+  name: at
+  syntax: at TIME
+  summary: Schedules a one-time command for later execution
+  flags:
+    - {flag: "-l", description: "Lists pending jobs"}
+    - {flag: "-d", description: "Deletes a pending job"}
+  examples:
+    - {cmd: "echo '/usr/local/bin/backup.sh' | at 23:00", description: "Schedules a one-time backup at 23:00"}
+  keywords: [one-time job, schedule command, delayed task]
+  related: [linux-crontab]
+
+# ======================= ARCHIVES / CHECKSUMS =======================
+- id: linux-sha256sum
+  tool: linux
+  category: security
+  name: sha256sum
+  syntax: sha256sum [FILE...]
+  summary: Calculates or verifies SHA-256 checksums
+  flags:
+    - {flag: "-c", description: "Checks hashes from a checksum file"}
+    - {flag: "--tag", description: "Uses tagged checksum output"}
+  examples:
+    - {cmd: "sha256sum app.tar.gz", description: "Calculates the SHA-256 checksum of an artifact"}
+    - {cmd: "sha256sum -c SHA256SUMS", description: "Verifies downloaded artifacts"}
+  keywords: [sha256, checksum, integrity, verify download, artifact]
+  related: [linux-curl, linux-wget]
+
+- id: linux-file
+  tool: linux
+  category: files
+  name: file
+  syntax: file [OPTIONS] FILE...
+  summary: Identifies file types using content and metadata
+  flags:
+    - {flag: "-b", description: "Brief output without filename"}
+    - {flag: "-L", description: "Follows symbolic links"}
+  examples:
+    - {cmd: "file app.bin", description: "Identifies the type and architecture of a binary"}
+    - {cmd: "file -L current", description: "Identifies the target of a symbolic link"}
+  keywords: [file type, binary type, inspect file, mime]
+  related: [linux-stat, linux-readlink]
+
+- id: linux-stat
+  tool: linux
+  category: files
+  name: stat
+  syntax: stat [OPTIONS] FILE
+  summary: Shows detailed file metadata
+  flags:
+    - {flag: "-c", description: "Uses a custom output format"}
+    - {flag: "-f", description: "Shows filesystem information"}
+  examples:
+    - {cmd: "stat app.log", description: "Shows size, timestamps, ownership, and permissions"}
+    - {cmd: "stat -c '%U %G %a %n' app.conf", description: "Shows owner, group, permissions, and filename"}
+  keywords: [file metadata, permissions, timestamps, owner, inode]
+  related: [linux-ls, linux-chown, linux-chmod]
+
+# ======================= CONTAINERS / DEVOPS =======================
+- id: linux-nsenter
+  tool: linux
+  category: containers
+  name: nsenter
+  syntax: nsenter -t PID -m|-u|-i|-n|-p COMMAND
+  summary: Runs a command inside selected Linux namespaces of another process
+  flags:
+    - {flag: "-t", description: "Target process ID"}
+    - {flag: "-m", description: "Enter the target mount namespace"}
+    - {flag: "-n", description: "Enter the target network namespace"}
+    - {flag: "-p", description: "Enter the target PID namespace"}
+  examples:
+    - {cmd: "sudo nsenter -t 1234 -n ip addr", description: "Inspects the target process network namespace"}
+    - {cmd: "sudo nsenter -t 1234 -m -u -i -n -p sh", description: "Opens a shell across selected namespaces"}
+  keywords: [container namespace, network namespace, debug container, linux namespace]
+  related: [linux-ip, linux-pidof]
+  danger: caution
+
+- id: linux-unshare
+  tool: linux
+  category: containers
+  name: unshare
+  syntax: unshare [OPTIONS] COMMAND
+  summary: Runs a command with selected Linux namespaces unshared
+  flags:
+    - {flag: "-n", description: "Unshares the network namespace"}
+    - {flag: "-m", description: "Unshares the mount namespace"}
+    - {flag: "-p", description: "Unshares the PID namespace"}
+    - {flag: "-r", description: "Maps the current user to root in the new user namespace"}
+  examples:
+    - {cmd: "unshare -Urnm sh", description: "Starts a shell with user, mount, and network namespaces"}
+  keywords: [namespace, container, isolation, linux namespace]
+  related: [linux-nsenter]
+  danger: caution
+
+# ======================= MISC DEVOPS =======================
+- id: linux-time
+  tool: linux
+  category: performance
+  name: time
+  syntax: time COMMAND
+  summary: Measures command execution time and resource usage
+  flags:
+    - {flag: "-p", description: "Portable timing format"}
+  examples:
+    - {cmd: "time ./deploy.sh", description: "Measures deployment execution time"}
+    - {cmd: "time curl -fsS https://example.com/health", description: "Measures an HTTP health check"}
+  keywords: [execution time, benchmark, command duration, performance]
+  related: [linux-timeout]
+
+- id: linux-timeout
+  tool: linux
+  category: processes
+  name: timeout
+  syntax: timeout [OPTIONS] DURATION COMMAND
+  summary: Runs a command with a maximum execution time
+  flags:
+    - {flag: "--signal", description: "Signal to send when the timeout expires"}
+    - {flag: "--kill-after", description: "Forces termination after an additional grace period"}
+  examples:
+    - {cmd: "timeout 30s ./health-check.sh", description: "Stops a health check after 30 seconds"}
+    - {cmd: "timeout --signal=TERM 2m ./deploy.sh", description: "Gives a deployment at most two minutes"}
+  keywords: [command timeout, prevent hang, ci timeout, automation]
+  related: [linux-kill, linux-time]
+
+- id: linux-watch
+  tool: linux
+  category: monitoring
+  name: watch
+  syntax: watch [-n SECONDS] COMMAND
+  summary: Repeats a command periodically and refreshes its output
+  flags:
+    - {flag: "-n", description: "Refresh interval in seconds"}
+    - {flag: "-d", description: "Highlights differences between updates"}
+  examples:
+    - {cmd: "watch -n 2 'ss -ltnp'", description: "Monitors listening TCP sockets every two seconds"}
+    - {cmd: "watch -d 'df -h /'", description: "Watches root filesystem usage and highlights changes"}
+  keywords: [watch command, live monitoring, refresh output, filesystem monitoring]
+  related: [linux-ss, linux-df, linux-top]

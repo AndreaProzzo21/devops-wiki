@@ -1,0 +1,405 @@
+# ======================= RELEASES =======================
+- id: helm-install
+  tool: helm
+  category: releases
+  name: helm install
+  syntax: helm install RELEASE CHART [-f values.yaml] [-n NS] [--create-namespace] [--version V]
+  summary: Install a chart as a new release
+  description: Fails if the release name already exists. For idempotent pipelines use helm upgrade --install.
+  flags:
+    - {flag: "-f, --values", description: "Values file overriding chart defaults (repeatable, later files win)"}
+    - {flag: "--set", description: "Override a single value (key=val, nested with dots, lists with {a,b})"}
+    - {flag: "--set-string", description: "Force a value to be a string (avoids 'true' or '123' being typed)"}
+    - {flag: "--set-file", description: "Set a value from the contents of a file"}
+    - {flag: "-n, --namespace", description: "Target namespace"}
+    - {flag: "--create-namespace", description: "Create the namespace if it does not exist"}
+    - {flag: "--version", description: "Chart version constraint (e.g. 15.2.1 or ~15.2)"}
+    - {flag: "--dry-run=client|server", description: "Render without installing (server also validates against the API)"}
+    - {flag: "--wait, --timeout", description: "Wait until resources are ready, with a timeout (e.g. 5m)"}
+    - {flag: "--atomic", description: "Roll back and delete on failure (implies --wait)"}
+    - {flag: "--generate-name", description: "Let Helm pick the release name"}
+    - {flag: "--debug", description: "Print the rendered manifests and extra diagnostics"}
+  examples:
+    - {cmd: "helm install web bitnami/nginx -n prod --create-namespace", description: "Install nginx into a new namespace"}
+    - {cmd: "helm install db bitnami/postgresql --version 15.5.0 -f values-prod.yaml --set auth.database=app", description: "Pinned version with a values file and an override"}
+    - {cmd: "helm install web ./mychart -n dev --dry-run=server --debug", description: "Validate a local chart against the cluster without installing"}
+    - {cmd: "helm install ingress oci://registry.example.com/charts/ingress --version 1.2.0", description: "Install from an OCI registry"}
+  keywords: [install chart, deploy chart, new release, deploy application, kubernetes package, create release]
+  related: [helm-upgrade, helm-template, helm-uninstall, helm-list, helm-show-values]
+  danger: caution
+
+- id: helm-upgrade
+  tool: helm
+  category: releases
+  name: helm upgrade
+  syntax: helm upgrade RELEASE CHART [--install] [-f values.yaml] [--atomic] [--reuse-values]
+  summary: Upgrade an existing release to a new chart version or new values
+  description: Use --install for idempotent CI/CD. Prefer passing the full values file every time instead of --reuse-values, which can hide drift.
+  flags:
+    - {flag: "--install, -i", description: "Install the release if it does not exist (idempotent)"}
+    - {flag: "--atomic", description: "Automatic rollback if the upgrade fails"}
+    - {flag: "--wait, --timeout", description: "Wait for readiness and set the deadline"}
+    - {flag: "--reuse-values", description: "Keep previous values and merge new --set on top"}
+    - {flag: "--reset-values", description: "Ignore previous values, use chart defaults plus supplied ones"}
+    - {flag: "--reset-then-reuse-values", description: "Reset to new chart defaults, then re-apply previous user values"}
+    - {flag: "--force", description: "Force resource updates by recreating them (disruptive)"}
+    - {flag: "--cleanup-on-fail", description: "Delete newly created resources if the upgrade fails"}
+    - {flag: "--history-max", description: "Maximum revisions kept (default 10)"}
+    - {flag: "--dry-run", description: "Simulate the upgrade"}
+    - {flag: "--version", description: "Chart version to upgrade to"}
+  examples:
+    - {cmd: "helm upgrade --install web bitnami/nginx -n prod --create-namespace -f values.yaml --atomic --timeout 5m", description: "Typical CI/CD deployment command"}
+    - {cmd: "helm upgrade web bitnami/nginx -n prod --version 18.1.0 --reuse-values", description: "Bump only the chart version"}
+    - {cmd: "helm upgrade web ./chart -n prod -f base.yaml -f prod.yaml --set image.tag=$GIT_SHA", description: "Layered values with the image tag injected by CI"}
+  keywords: [upgrade release, update chart, ci cd, redeploy, change values, bump version, rolling update]
+  related: [helm-install, helm-diff-upgrade, helm-rollback, helm-history, helm-get-values]
+  danger: caution
+
+- id: helm-rollback
+  tool: helm
+  category: releases
+  name: helm rollback
+  syntax: helm rollback RELEASE [REVISION] [-n NS] [--wait]
+  summary: Roll a release back to a previous revision
+  description: Creates a new revision whose content equals the target one. Revision 0 or omitted means the previous revision.
+  flags:
+    - {flag: "--wait, --timeout", description: "Wait for the rollback to become ready"}
+    - {flag: "--cleanup-on-fail", description: "Remove resources created during a failed rollback"}
+    - {flag: "--force", description: "Force resource updates via recreate"}
+    - {flag: "--no-hooks", description: "Skip rollback hooks"}
+    - {flag: "--dry-run", description: "Simulate"}
+  examples:
+    - {cmd: "helm history web -n prod && helm rollback web 3 -n prod --wait", description: "Pick a revision from history, then roll back"}
+    - {cmd: "helm rollback web -n prod", description: "Back to the previous revision"}
+  keywords: [rollback, revert release, undo upgrade, go back, restore previous version, failed upgrade]
+  related: [helm-history, helm-upgrade, helm-status]
+  danger: caution
+
+- id: helm-uninstall
+  tool: helm
+  category: releases
+  name: helm uninstall
+  syntax: helm uninstall RELEASE [-n NS] [--keep-history]
+  summary: Remove a release and the resources it created
+  description: PersistentVolumeClaims from StatefulSets are usually NOT deleted by Kubernetes, remove them manually if you want the data gone.
+  flags:
+    - {flag: "--keep-history", description: "Keep the release record so it can still be rolled back"}
+    - {flag: "--wait", description: "Wait until all resources are deleted"}
+    - {flag: "--no-hooks", description: "Skip pre/post-delete hooks"}
+    - {flag: "--dry-run", description: "Show what would be removed"}
+  examples:
+    - {cmd: "helm uninstall web -n prod", description: "Remove the release"}
+    - {cmd: "helm uninstall web -n prod --keep-history", description: "Remove but retain history for possible rollback"}
+  keywords: [delete release, uninstall chart, remove deployment, delete, teardown]
+  related: [helm-list, helm-install]
+  danger: destructive
+
+- id: helm-list
+  tool: helm
+  category: releases
+  name: helm list
+  syntax: helm list [-A] [-n NS] [--failed|--pending|--deployed] [-o json|yaml]
+  summary: List installed releases
+  flags:
+    - {flag: "-A, --all-namespaces", description: "Releases in every namespace"}
+    - {flag: "-n, --namespace", description: "Specific namespace"}
+    - {flag: "--failed / --pending / --deployed / --uninstalled", description: "Filter by status"}
+    - {flag: "-a, --all", description: "Show all statuses, including uninstalled ones kept with history"}
+    - {flag: "-f, --filter", description: "Regex on release name"}
+    - {flag: "-o, --output", description: "table, json or yaml"}
+    - {flag: "--date, -r", description: "Sort by date / reverse order"}
+  examples:
+    - {cmd: "helm list -A", description: "Everything on the cluster"}
+    - {cmd: "helm list -A --failed", description: "Find broken releases"}
+    - {cmd: "helm list -A --pending", description: "Releases stuck mid-operation"}
+    - {cmd: "helm list -n prod -o json | jq -r '.[].name'", description: "Machine-readable release names"}
+  keywords: [list releases, installed charts, deployed apps, helm ls, what is installed, failed releases]
+  related: [helm-status, helm-history, helm-install, helm-rollback]
+
+- id: helm-status
+  tool: helm
+  category: releases
+  name: helm status
+  syntax: helm status RELEASE [-n NS] [--revision N] [-o yaml]
+  summary: Show the status, notes and last deployment info of a release
+  flags:
+    - {flag: "--revision", description: "Status of a specific revision"}
+    - {flag: "--show-resources", description: "List the Kubernetes resources of the release"}
+    - {flag: "-o, --output", description: "table, json, yaml"}
+  examples:
+    - {cmd: "helm status web -n prod --show-resources", description: "Release state plus its Kubernetes objects"}
+  keywords: [release status, deployment status, notes, health, is it deployed, check release]
+  related: [helm-list, helm-history, helm-get-manifest]
+
+- id: helm-history
+  tool: helm
+  category: releases
+  name: helm history
+  syntax: helm history RELEASE [-n NS] [--max N] [-o yaml]
+  summary: Show all revisions of a release with status and chart version
+  flags:
+    - {flag: "--max", description: "Limit the number of revisions shown"}
+    - {flag: "-o, --output", description: "table, json, yaml"}
+  examples:
+    - {cmd: "helm history web -n prod", description: "See which revision is deployed and which failed"}
+  keywords: [revisions, release history, changelog, previous versions, audit, what changed, deployed before]
+  related: [helm-rollback, helm-get-values, helm-status]
+
+# ======================= INSPECTION =======================
+- id: helm-get-values
+  tool: helm
+  category: inspection
+  name: helm get values
+  syntax: helm get values RELEASE [-n NS] [--all] [--revision N] [-o yaml]
+  summary: Show the user-supplied values of a deployed release
+  flags:
+    - {flag: "-a, --all", description: "Include computed defaults, not just user-supplied values"}
+    - {flag: "--revision", description: "Values of an older revision"}
+    - {flag: "-o, --output", description: "table, json, yaml"}
+  examples:
+    - {cmd: "helm get values web -n prod -o yaml > current-values.yaml", description: "Export live values to reuse in the next upgrade"}
+    - {cmd: "helm get values web -n prod --revision 2 -o yaml | diff - <(helm get values web -n prod -o yaml)", description: "Compare values between revisions"}
+  keywords: [current values, deployed values, override values, what was configured, export values, config of release]
+  related: [helm-get-manifest, helm-upgrade, helm-show-values]
+
+- id: helm-get-manifest
+  tool: helm
+  category: inspection
+  name: helm get manifest
+  syntax: helm get manifest RELEASE [-n NS] [--revision N]
+  summary: Show the exact Kubernetes manifests that were applied for a release
+  flags:
+    - {flag: "--revision", description: "Manifest of a specific revision"}
+  examples:
+    - {cmd: "helm get manifest web -n prod | kubectl diff -f -", description: "Compare the release against live cluster state"}
+    - {cmd: "helm get all web -n prod", description: "Everything: notes, hooks, values, manifest"}
+  keywords: [rendered yaml, applied manifest, deployed resources, hooks, notes, what is deployed, kubernetes yaml]
+  related: [helm-get-values, helm-template, helm-status]
+
+- id: helm-diff-upgrade
+  tool: helm
+  category: inspection
+  name: helm diff upgrade
+  syntax: helm diff upgrade RELEASE CHART [-f values.yaml] [--install] [--three-way-merge]
+  summary: Preview the exact changes an upgrade would make (plugin)
+  description: Requires the helm-diff plugin, install with helm plugin install https://github.com/databus23/helm-diff. The most useful safety net before upgrading production.
+  flags:
+    - {flag: "--three-way-merge", description: "Account for manual changes made in the cluster (drift)"}
+    - {flag: "--install", description: "Treat a missing release as an install (diff against empty)"}
+    - {flag: "--context N", description: "Lines of context in the diff"}
+    - {flag: "--detailed-exitcode", description: "Exit code 2 when there are changes, useful in CI"}
+    - {flag: "--suppress-secrets", description: "Hide Secret values in the output"}
+  examples:
+    - {cmd: "helm diff upgrade web bitnami/nginx -n prod -f values.yaml --suppress-secrets", description: "Review changes before applying"}
+    - {cmd: "helm diff upgrade web ./chart -n prod -f values.yaml --detailed-exitcode", description: "Fail a pipeline step if drift or changes exist"}
+  keywords: [diff, preview upgrade, what will change, dry run, plugin, review changes, drift]
+  related: [helm-upgrade, helm-template, helm-plugin]
+
+- id: helm-plugin
+  tool: helm
+  category: inspection
+  name: helm plugin
+  syntax: helm plugin install URL | list | update NAME | uninstall NAME
+  summary: Manage Helm plugins such as helm-diff, helm-secrets and helm-unittest
+  examples:
+    - {cmd: "helm plugin install https://github.com/databus23/helm-diff", description: "Install the diff plugin"}
+    - {cmd: "helm plugin install https://github.com/helm-unittest/helm-unittest", description: "Unit testing for charts"}
+    - {cmd: "helm plugin list", description: "Show installed plugins"}
+  keywords: [plugins, extensions, helm diff, helm secrets, unittest, install plugin]
+  related: [helm-diff-upgrade, helm-lint]
+
+# ======================= CHARTS / DEVELOPMENT =======================
+- id: helm-template
+  tool: helm
+  category: charts
+  name: helm template
+  syntax: helm template RELEASE CHART [-f values.yaml] [--show-only FILE] [--validate]
+  summary: Render chart templates locally, no cluster changes
+  description: Great for debugging templates, GitOps pipelines and policy checks (kubeconform, conftest, kubectl diff).
+  flags:
+    - {flag: "-s, --show-only", description: "Render only one template (e.g. templates/deployment.yaml)"}
+    - {flag: "--validate", description: "Validate against the cluster API"}
+    - {flag: "--include-crds", description: "Include CRDs in the output"}
+    - {flag: "-n, --namespace", description: "Namespace for .Release.Namespace"}
+    - {flag: "--api-versions, --kube-version", description: "Simulate API versions or cluster version"}
+    - {flag: "--output-dir", description: "Write each rendered file into a directory"}
+    - {flag: "--debug", description: "Show values and rendering errors in detail"}
+  examples:
+    - {cmd: "helm template web ./chart -f values-prod.yaml | kubectl apply --dry-run=server -f -", description: "Validate rendered output against the API"}
+    - {cmd: "helm template web ./chart -s templates/ingress.yaml --set ingress.enabled=true", description: "Debug a single template"}
+    - {cmd: "helm template web ./chart -f values.yaml | kubeconform -strict -summary", description: "Schema-validate the manifests"}
+  keywords: [render templates, debug template, generate yaml, gitops, local render, no install, helm to yaml]
+  related: [helm-lint, helm-install, helm-get-manifest, helm-diff-upgrade]
+
+- id: helm-lint
+  tool: helm
+  category: charts
+  name: helm lint
+  syntax: helm lint CHART [-f values.yaml] [--strict]
+  summary: Check a chart for problems and best-practice issues
+  flags:
+    - {flag: "--strict", description: "Treat warnings as failures"}
+    - {flag: "-f, --values / --set", description: "Lint with specific values"}
+    - {flag: "--with-subcharts", description: "Also lint dependencies"}
+  examples:
+    - {cmd: "helm lint ./chart --strict -f values-prod.yaml", description: "CI gate for chart quality"}
+  keywords: [validate chart, check chart, errors, static analysis, ci, verify templates]
+  related: [helm-template, helm-package, helm-create]
+
+- id: helm-create
+  tool: helm
+  category: charts
+  name: helm create
+  syntax: helm create NAME [--starter STARTER]
+  summary: Scaffold a new chart with sensible defaults
+  examples:
+    - {cmd: "helm create myapp", description: "Generates Chart.yaml, values.yaml and templates for a Deployment, Service, Ingress and HPA"}
+  keywords: [new chart, scaffold, boilerplate, start chart, create chart, skeleton]
+  related: [helm-lint, helm-template, helm-package]
+
+- id: helm-package
+  tool: helm
+  category: charts
+  name: helm package
+  syntax: helm package CHART_DIR [--version V] [--app-version V] [-d DEST] [-u]
+  summary: Package a chart directory into a versioned .tgz archive
+  flags:
+    - {flag: "--version", description: "Override the chart version"}
+    - {flag: "--app-version", description: "Override the application version"}
+    - {flag: "-d, --destination", description: "Output directory"}
+    - {flag: "-u, --dependency-update", description: "Update dependencies before packaging"}
+    - {flag: "--sign / --key", description: "Sign the package with a GPG key"}
+  examples:
+    - {cmd: "helm package ./chart --version 1.4.0 --app-version $GIT_SHA -d dist/", description: "Versioned package from CI"}
+  keywords: [build chart, tarball, release chart, publish, tgz, package chart]
+  related: [helm-push, helm-lint, helm-dependency-update]
+
+- id: helm-dependency-update
+  tool: helm
+  category: charts
+  name: helm dependency update
+  syntax: helm dependency update|build|list CHART_DIR
+  summary: Download the sub-charts listed in Chart.yaml into charts/
+  description: update re-resolves versions and rewrites Chart.lock; build installs exactly what Chart.lock says (reproducible).
+  examples:
+    - {cmd: "helm dependency update ./chart", description: "Fetch and lock dependencies"}
+    - {cmd: "helm dependency build ./chart", description: "Reproducible install from Chart.lock in CI"}
+    - {cmd: "helm dependency list ./chart", description: "Show dependency status"}
+  keywords: [dependencies, subcharts, chart.lock, requirements, helm dep, fetch dependencies]
+  related: [helm-package, helm-template]
+
+- id: helm-test
+  tool: helm
+  category: charts
+  name: helm test
+  syntax: helm test RELEASE [-n NS] [--logs] [--timeout 5m]
+  summary: Run the test hooks defined in a chart against a deployed release
+  flags:
+    - {flag: "--logs", description: "Print the logs of test pods"}
+    - {flag: "--filter", description: "Run only selected tests (name=test-connection)"}
+    - {flag: "--timeout", description: "Time to wait for tests"}
+  examples:
+    - {cmd: "helm test web -n prod --logs", description: "Smoke-test a release after deployment"}
+  keywords: [test release, smoke test, verify deployment, hooks, post deploy check]
+  related: [helm-install, helm-upgrade]
+
+# ======================= REPOSITORIES / REGISTRY =======================
+- id: helm-repo-add
+  tool: helm
+  category: repositories
+  name: helm repo add
+  syntax: helm repo add NAME URL [--username U --password P]
+  summary: Register a chart repository
+  flags:
+    - {flag: "--username, --password", description: "Credentials for private repositories"}
+    - {flag: "--force-update", description: "Replace an existing repo with the same name"}
+    - {flag: "--ca-file / --cert-file / --key-file", description: "TLS options"}
+  examples:
+    - {cmd: "helm repo add bitnami https://charts.bitnami.com/bitnami", description: "Add the Bitnami repository"}
+    - {cmd: "helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx", description: "Add the ingress-nginx repository"}
+    - {cmd: "helm repo list", description: "Show configured repositories"}
+  keywords: [add repository, chart repo, register repo, helm repo, source of charts]
+  related: [helm-repo-update, helm-search-repo, helm-install]
+
+- id: helm-repo-update
+  tool: helm
+  category: repositories
+  name: helm repo update
+  syntax: helm repo update [REPO...]
+  summary: Refresh the local cache of chart indexes
+  description: Run it before searching or installing, otherwise you only see versions from the last update.
+  examples:
+    - {cmd: "helm repo update bitnami", description: "Update a single repository"}
+  keywords: [refresh repos, update index, latest versions, fetch charts list, sync repositories]
+  related: [helm-repo-add, helm-search-repo]
+
+- id: helm-search-repo
+  tool: helm
+  category: repositories
+  name: helm search repo
+  syntax: helm search repo KEYWORD [--versions] [-l] [--version CONSTRAINT]
+  summary: Search charts in the repositories you have added
+  flags:
+    - {flag: "-l, --versions", description: "Show every version, not only the latest"}
+    - {flag: "--version", description: "Version constraint (e.g. ^15.0)"}
+    - {flag: "--devel", description: "Include pre-release versions"}
+    - {flag: "-o, --output", description: "table, json, yaml"}
+  examples:
+    - {cmd: "helm search repo postgresql --versions | head", description: "Recent versions of a chart"}
+    - {cmd: "helm search repo bitnami/ -o json", description: "All charts of one repository"}
+  keywords: [find chart, search charts, available versions, look up chart, which version]
+  related: [helm-search-hub, helm-show-values, helm-repo-update]
+
+- id: helm-search-hub
+  tool: helm
+  category: repositories
+  name: helm search hub
+  syntax: helm search hub KEYWORD [--max-col-width N]
+  summary: Search Artifact Hub for charts from public repositories
+  examples:
+    - {cmd: "helm search hub prometheus --max-col-width 80", description: "Discover monitoring charts"}
+  keywords: [artifact hub, discover charts, public charts, find application, search online]
+  related: [helm-search-repo, helm-repo-add]
+
+- id: helm-show-values
+  tool: helm
+  category: repositories
+  name: helm show values
+  syntax: helm show values|chart|readme|crds|all CHART [--version V]
+  summary: Display the default values.yaml, README, Chart.yaml or CRDs of a chart
+  description: The first thing to read before installing a chart. Redirect to a file as a starting point for your own values.
+  examples:
+    - {cmd: "helm show values bitnami/postgresql --version 15.5.0 > values-default.yaml", description: "Dump default values as a template"}
+    - {cmd: "helm show readme ingress-nginx/ingress-nginx", description: "Read the configuration docs"}
+    - {cmd: "helm show crds cert-manager/cert-manager", description: "See the CRDs a chart ships"}
+  keywords: [default values, chart options, configuration reference, readme, parameters, inspect chart]
+  related: [helm-install, helm-pull, helm-get-values]
+
+- id: helm-pull
+  tool: helm
+  category: repositories
+  name: helm pull
+  syntax: helm pull CHART [--version V] [--untar] [-d DEST]
+  summary: Download a chart without installing it
+  flags:
+    - {flag: "--untar", description: "Extract after download"}
+    - {flag: "--untardir", description: "Directory to extract into"}
+    - {flag: "--verify", description: "Verify the package signature"}
+  examples:
+    - {cmd: "helm pull bitnami/nginx --version 18.1.0 --untar", description: "Fetch and inspect or fork a chart"}
+    - {cmd: "helm pull oci://registry.example.com/charts/app --version 1.0.0", description: "Download from OCI"}
+  keywords: [download chart, fetch chart, vendor chart, offline, inspect source, tgz]
+  related: [helm-show-values, helm-package]
+
+- id: helm-push
+  tool: helm
+  category: repositories
+  name: helm push (OCI)
+  syntax: helm push CHART.tgz oci://REGISTRY/PATH
+  summary: Publish a packaged chart to an OCI registry
+  description: Log in first with helm registry login. Works with Docker Hub, GHCR, ECR, ACR, Harbor and others.
+  examples:
+    - {cmd: "echo $TOKEN | helm registry login ghcr.io -u USER --password-stdin", description: "Authenticate"}
+    - {cmd: "helm push dist/app-1.4.0.tgz oci://ghcr.io/org/charts", description: "Publish the chart"}
+  keywords: [publish chart, oci registry, upload chart, registry login, ghcr, ecr, harbor]
+  related: [helm-package, helm-pull]

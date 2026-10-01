@@ -1,0 +1,506 @@
+# ======================= KUBERNETES =======================
+- id: ts-crashloopbackoff
+  tool: troubleshooting
+  category: kubernetes
+  name: Pod in CrashLoopBackOff
+  syntax: kubectl logs POD --previous
+  summary: The container starts, crashes and is restarted in a loop with growing back-off delay
+  description: "Typical causes: application error at startup, missing or wrong config/secret, bad command or args, failing liveness probe, OOMKilled, dependency (database) unreachable."
+  examples:
+    - {cmd: "kubectl logs POD --previous", description: "1. Logs of the crashed instance, the stack trace is usually here"}
+    - {cmd: "kubectl describe pod POD | grep -A8 'Last State'", description: "2. Check Reason and Exit Code (137 = SIGKILL/OOM, 1 = app error, 126/127 = bad command)"}
+    - {cmd: "kubectl get events --sort-by=.lastTimestamp", description: "3. Recent warnings such as probe failures"}
+    - {cmd: "kubectl get pod POD -o jsonpath='{.spec.containers[*].livenessProbe}'", description: "4. A too aggressive liveness probe can kill a healthy app"}
+    - {cmd: "kubectl run dbg --rm -it --image=busybox --restart=Never -- nslookup db.prod.svc", description: "5. Verify dependencies are reachable from inside the cluster"}
+  keywords: [pod crash, restart loop, keeps restarting, oomkilled, exit code 137, exit code 1, back-off restarting failed container, crashloop, container keeps dying]
+  related: [kubectl-logs, kubectl-describe-pod, kubectl-get-events, ts-oomkilled, ts-createcontainerconfigerror]
+
+- id: ts-imagepullbackoff
+  tool: troubleshooting
+  category: kubernetes
+  name: ImagePullBackOff / ErrImagePull
+  syntax: kubectl describe pod POD
+  summary: Kubernetes cannot pull the container image
+  description: "Causes: wrong image name or tag, image does not exist, private registry without imagePullSecrets, expired credentials or rate limit (Docker Hub), network or DNS issue on the node, wrong architecture."
+  examples:
+    - {cmd: "kubectl describe pod POD | sed -n '/Events:/,$p'", description: "1. The event names the exact error (not found, unauthorized, timeout, toomanyrequests)"}
+    - {cmd: "kubectl get pod POD -o jsonpath='{.spec.containers[*].image}'", description: "2. Verify the requested image and tag"}
+    - {cmd: "kubectl get pod POD -o jsonpath='{.spec.imagePullSecrets}'", description: "3. Is a pull secret attached?"}
+    - {cmd: "kubectl create secret docker-registry regcred --docker-server=REGISTRY --docker-username=USER --docker-password=TOKEN", description: "4. Create the pull secret, then reference it in the pod or ServiceAccount"}
+    - {cmd: "docker manifest inspect REGISTRY/IMAGE:TAG", description: "5. Confirm the tag exists for your platform"}
+  keywords: [image pull error, errimagepull, imagepullbackoff, unauthorized, manifest unknown, not found, registry, pull secret, toomanyrequests, rate limit]
+  related: [kubectl-describe-pod, kubectl-create-secret, kubectl-get-pods, kubectl-set-image]
+
+- id: ts-pod-pending
+  tool: troubleshooting
+  category: kubernetes
+  name: Pod stuck in Pending
+  syntax: kubectl describe pod POD
+  summary: The pod is accepted but never scheduled onto a node
+  description: "Read the FailedScheduling event: Insufficient cpu/memory, node taints not tolerated, nodeSelector or affinity with no match, unbound PersistentVolumeClaim, quota exceeded, no nodes available."
+  examples:
+    - {cmd: "kubectl describe pod POD | grep -A10 Events", description: "1. The scheduler message says exactly why, e.g. 0/5 nodes are available: 3 Insufficient memory, 2 node(s) had untolerated taint"}
+    - {cmd: "kubectl describe nodes | grep -A8 'Allocated resources'", description: "2. Are nodes full on requests?"}
+    - {cmd: "kubectl get pvc -n NS", description: "3. A Pending claim blocks the pod"}
+    - {cmd: "kubectl describe resourcequota -n NS", description: "4. Namespace quota exhausted?"}
+    - {cmd: "kubectl get nodes --show-labels", description: "5. Do any nodes match the nodeSelector or affinity?"}
+  keywords: [pending, unschedulable, failedscheduling, insufficient cpu, insufficient memory, untolerated taint, no nodes available, pod not starting, not scheduled]
+  related: [kubectl-describe-pod, kubectl-get-nodes, kubectl-top, ts-pvc-pending, kubectl-taint]
+
+- id: ts-oomkilled
+  tool: troubleshooting
+  category: kubernetes
+  name: OOMKilled / exit code 137
+  syntax: kubectl describe pod POD | grep -B2 -A6 OOMKilled
+  summary: The container exceeded its memory limit and was killed by the kernel
+  description: Raise the limit, fix the leak, or tune the runtime (JVM -XX:MaxRAMPercentage, Node --max-old-space-size). Exit code 137 can also mean a manual SIGKILL.
+  examples:
+    - {cmd: "kubectl describe pod POD | grep -B2 -A6 'Last State'", description: "1. Confirm Reason OOMKilled"}
+    - {cmd: "kubectl top pod POD --containers", description: "2. Current usage versus the limit"}
+    - {cmd: "kubectl get pod POD -o jsonpath='{.spec.containers[*].resources}'", description: "3. Compare requests and limits"}
+    - {cmd: "kubectl set resources deploy/web -c web --limits=memory=1Gi --requests=memory=512Mi", description: "4. Raise limits as a quick mitigation"}
+    - {cmd: "kubectl get events --field-selector reason=OOMKilling -A", description: "5. Node-level OOM events"}
+  keywords: [oomkilled, out of memory, memory limit, exit code 137, killed, memory leak, container killed, ram]
+  related: [kubectl-top, kubectl-describe-pod, ts-crashloopbackoff, ts-oom-killer]
+
+- id: ts-createcontainerconfigerror
+  tool: troubleshooting
+  category: kubernetes
+  name: CreateContainerConfigError
+  syntax: kubectl describe pod POD
+  summary: The container cannot be created because a referenced ConfigMap, Secret or key is missing
+  examples:
+    - {cmd: "kubectl describe pod POD | grep -i -A3 'Error\\|not found'", description: "1. Names the missing object, e.g. secret db-creds not found"}
+    - {cmd: "kubectl get secret,configmap -n NS", description: "2. Does it exist in the right namespace?"}
+    - {cmd: "kubectl get secret db-creds -n NS -o jsonpath='{.data}' | jq 'keys'", description: "3. Is the referenced key present?"}
+    - {cmd: "kubectl get pod POD -o yaml | grep -B2 -A5 secretKeyRef", description: "4. Check how the pod references it"}
+  keywords: [createcontainerconfigerror, secret not found, configmap not found, missing key, env var, couldnt find key, runasnonroot, config error]
+  related: [kubectl-create-secret, kubectl-create-configmap, kubectl-describe-pod, ts-crashloopbackoff]
+
+- id: ts-service-unreachable
+  tool: troubleshooting
+  category: kubernetes
+  name: Service not reachable / no endpoints
+  syntax: kubectl get endpoints SERVICE -n NS
+  summary: Traffic to a Service times out or is refused
+  description: "Most common: selector does not match pod labels (empty endpoints), pods are not Ready, wrong targetPort, NetworkPolicy blocking traffic."
+  examples:
+    - {cmd: "kubectl get endpoints SERVICE -n NS", description: "1. Empty ENDPOINTS means the selector matches no Ready pod"}
+    - {cmd: "kubectl get svc SERVICE -n NS -o jsonpath='{.spec.selector}'", description: "2. Service selector"}
+    - {cmd: "kubectl get pods -n NS --show-labels", description: "3. Compare with pod labels and READY state"}
+    - {cmd: "kubectl get svc SERVICE -n NS -o jsonpath='{.spec.ports}'", description: "4. targetPort must equal the container port"}
+    - {cmd: "kubectl run curl --rm -it --image=curlimages/curl --restart=Never -- curl -sv http://SERVICE.NS.svc:PORT", description: "5. Test from inside the cluster"}
+    - {cmd: "kubectl get networkpolicy -n NS", description: "6. Is a policy dropping the traffic?"}
+  keywords: [service not working, no endpoints, connection refused, connection timed out, selector mismatch, cannot connect, service unreachable, targetport]
+  related: [kubectl-describe, kubectl-get, kubectl-run, kubectl-port-forward, ts-ingress-502-503]
+
+- id: ts-ingress-502-503
+  tool: troubleshooting
+  category: kubernetes
+  name: Ingress returns 502 / 503 / 504
+  syntax: kubectl describe ingress NAME -n NS
+  summary: The ingress controller answers but cannot reach healthy backends
+  description: "503 usually means no ready endpoints, 502 a backend that closed the connection or speaks another protocol, 504 a timeout. Check the Service first, then the controller."
+  examples:
+    - {cmd: "kubectl describe ingress NAME -n NS", description: "1. Backend service and port, look for service not found"}
+    - {cmd: "kubectl get endpoints BACKEND_SVC -n NS", description: "2. Does the backend have ready endpoints?"}
+    - {cmd: "kubectl logs -n ingress-nginx -l app.kubernetes.io/name=ingress-nginx --tail=50", description: "3. Controller logs name the upstream error"}
+    - {cmd: "kubectl port-forward svc/BACKEND_SVC 8080:PORT -n NS", description: "4. Bypass the ingress to test the app directly"}
+    - {cmd: "kubectl annotate ingress NAME nginx.ingress.kubernetes.io/proxy-read-timeout=120 --overwrite", description: "5. Raise timeouts for slow backends (504)"}
+  keywords: [502 bad gateway, 503 service unavailable, 504 gateway timeout, ingress error, nginx ingress, bad gateway, upstream, default backend]
+  related: [ts-service-unreachable, kubectl-describe, kubectl-logs, kubectl-port-forward, kubectl-annotate]
+
+- id: ts-node-notready
+  tool: troubleshooting
+  category: kubernetes
+  name: Node NotReady
+  syntax: kubectl describe node NODE
+  summary: A node stopped reporting healthy to the control plane
+  description: "Causes: kubelet down, container runtime failure, disk or memory pressure, network partition, cloud instance stopped. Pods on it will be evicted after the toleration timeout (about 5 minutes)."
+  examples:
+    - {cmd: "kubectl describe node NODE | grep -A12 Conditions", description: "1. Look for MemoryPressure, DiskPressure, PIDPressure, Ready=Unknown"}
+    - {cmd: "kubectl get events --field-selector involvedObject.name=NODE", description: "2. Node events"}
+    - {cmd: "ssh NODE 'systemctl status kubelet containerd --no-pager'", description: "3. Are kubelet and the runtime running?"}
+    - {cmd: "ssh NODE 'journalctl -u kubelet -n 100 --no-pager'", description: "4. Kubelet errors (certificates, cgroups, CNI)"}
+    - {cmd: "ssh NODE 'df -h /var/lib && df -i /var/lib'", description: "5. Full disk is a frequent culprit"}
+    - {cmd: "kubectl drain NODE --ignore-daemonsets --delete-emptydir-data", description: "6. If it must be repaired, move workloads away first"}
+  keywords: [node not ready, notready, kubelet down, node unknown, node failure, disk pressure, memory pressure, node unreachable, worker down]
+  related: [kubectl-get-nodes, kubectl-describe, kubectl-drain, kubectl-cordon, linux-journalctl, linux-systemctl, linux-df]
+
+- id: ts-pvc-pending
+  tool: troubleshooting
+  category: kubernetes
+  name: PersistentVolumeClaim stuck in Pending
+  syntax: kubectl describe pvc NAME -n NS
+  summary: A claim never binds to a volume
+  description: "Causes: no matching StorageClass or no default class, provisioner failing (cloud quota, IAM), WaitForFirstConsumer binding mode (normal until a pod uses it), zone mismatch, requested size or access mode unavailable."
+  examples:
+    - {cmd: "kubectl describe pvc NAME -n NS", description: "1. Events show the provisioner message"}
+    - {cmd: "kubectl get storageclass", description: "2. Is there a default (marked default)? What is the binding mode?"}
+    - {cmd: "kubectl get pv", description: "3. Static volumes available with the right size and access mode?"}
+    - {cmd: "kubectl logs -n kube-system -l app=ebs-csi-controller -c csi-provisioner --tail=50", description: "4. CSI provisioner logs (name varies by driver)"}
+  keywords: [pvc pending, volume not binding, storageclass, persistent volume, provisioning failed, waitforfirstconsumer, no volume plugin, storage]
+  related: [kubectl-describe, kubectl-get, ts-pod-pending, kubectl-get-events]
+
+- id: ts-rollout-stuck
+  tool: troubleshooting
+  category: kubernetes
+  name: Deployment rollout stuck / ProgressDeadlineExceeded
+  syntax: kubectl rollout status deploy/NAME -n NS
+  summary: New pods never become Ready so the rollout does not complete
+  examples:
+    - {cmd: "kubectl rollout status deploy/NAME -n NS --timeout=60s", description: "1. Is it progressing?"}
+    - {cmd: "kubectl get rs -n NS -l app=NAME", description: "2. Old and new ReplicaSets and their ready counts"}
+    - {cmd: "kubectl describe pod -n NS -l app=NAME | grep -A10 Events", description: "3. Why the new pods fail (image, probe, resources)"}
+    - {cmd: "kubectl logs deploy/NAME -n NS --tail=50", description: "4. Application errors on startup"}
+    - {cmd: "kubectl rollout undo deploy/NAME -n NS", description: "5. Roll back while you investigate"}
+  keywords: [rollout stuck, progressdeadlineexceeded, deployment not updating, new pods not ready, readiness probe failing, rolling update hung, deploy failed]
+  related: [kubectl-rollout-status, kubectl-rollout-undo, kubectl-rollout-history, kubectl-describe-pod, ts-crashloopbackoff]
+
+- id: ts-terminating-stuck
+  tool: troubleshooting
+  category: kubernetes
+  name: Pod or namespace stuck in Terminating
+  syntax: kubectl get pod POD -o jsonpath='{.metadata.finalizers}'
+  summary: A resource will not disappear after deletion
+  description: Usually finalizers waiting for a controller that is gone, a node that is unreachable, or an unmounted volume. Forcing deletion skips cleanup, use it as a last resort.
+  examples:
+    - {cmd: "kubectl get pod POD -o jsonpath='{.metadata.finalizers}'", description: "1. Which finalizers are blocking?"}
+    - {cmd: "kubectl get pod POD -o wide", description: "2. Is the node NotReady? (the kubelet cannot confirm termination)"}
+    - {cmd: "kubectl delete pod POD --grace-period=0 --force", description: "3. Force-remove the pod object (processes may keep running)"}
+    - {cmd: "kubectl patch pvc NAME --type=merge -p '{\"metadata\":{\"finalizers\":null}}'", description: "4. Clear a stuck finalizer (be sure nothing uses it)"}
+    - {cmd: "kubectl api-resources --verbs=list --namespaced -o name | xargs -n1 kubectl get -n NS --ignore-not-found", description: "5. For a stuck namespace, find what is left inside it"}
+  keywords: [terminating, stuck deleting, finalizer, namespace terminating, cannot delete, hung deletion, force delete, orphan]
+  related: [kubectl-delete, kubectl-delete-pod, kubectl-patch, kubectl-get-nodes]
+  danger: destructive
+
+- id: ts-evicted-pods
+  tool: troubleshooting
+  category: kubernetes
+  name: Evicted pods / node pressure
+  syntax: kubectl get pods -A --field-selector=status.phase=Failed
+  summary: Pods were evicted because the node ran out of memory, disk or inodes
+  examples:
+    - {cmd: "kubectl get pods -A --field-selector=status.phase=Failed", description: "1. List evicted and failed pods"}
+    - {cmd: "kubectl describe pod POD | grep -i -A3 'Status\\|Reason\\|Message'", description: "2. Eviction reason, e.g. The node was low on resource: ephemeral-storage"}
+    - {cmd: "kubectl describe node NODE | grep -A6 Conditions", description: "3. Pressure conditions on the node"}
+    - {cmd: "kubectl delete pods -A --field-selector=status.phase=Failed", description: "4. Clean up the leftovers"}
+    - {cmd: "kubectl get pods -A -o json | jq -r '.items[] | select(.spec.containers[].resources.requests == null) | .metadata.name'", description: "5. Find pods without requests, first to be evicted"}
+  keywords: [evicted, eviction, node pressure, ephemeral storage, low on resource, disk pressure, memory pressure, besteffort, failed pods]
+  related: [kubectl-get-pods, kubectl-describe-pod, kubectl-delete-pod, ts-node-notready, ts-disk-full]
+
+- id: ts-k8s-dns
+  tool: troubleshooting
+  category: kubernetes
+  name: DNS resolution fails inside the cluster
+  syntax: kubectl run dns-test --rm -it --image=busybox:1.36 --restart=Never -- nslookup kubernetes.default
+  summary: Pods cannot resolve service names or external domains
+  examples:
+    - {cmd: "kubectl run dns-test --rm -it --image=busybox:1.36 --restart=Never -- nslookup kubernetes.default", description: "1. Does in-cluster DNS work at all?"}
+    - {cmd: "kubectl get pods -n kube-system -l k8s-app=kube-dns", description: "2. Are CoreDNS pods Running and Ready?"}
+    - {cmd: "kubectl logs -n kube-system -l k8s-app=kube-dns --tail=50", description: "3. Loops, timeouts, upstream failures"}
+    - {cmd: "kubectl exec POD -- cat /etc/resolv.conf", description: "4. Check nameserver, search domains and ndots"}
+    - {cmd: "kubectl get cm coredns -n kube-system -o yaml", description: "5. Review the Corefile (forward targets, loop plugin)"}
+  keywords: [dns, name resolution, nslookup, coredns, cannot resolve, no such host, temporary failure in name resolution, service discovery, ndots]
+  related: [kubectl-run, kubectl-logs, kubectl-exec, ts-service-unreachable, ts-dns-resolution]
+
+- id: ts-k8s-forbidden-rbac
+  tool: troubleshooting
+  category: kubernetes
+  name: Forbidden / RBAC permission denied
+  syntax: kubectl auth can-i VERB RESOURCE -n NS
+  summary: The API server rejects an action for the current user or service account
+  examples:
+    - {cmd: "kubectl auth can-i get pods -n NS --as=system:serviceaccount:NS:SA", description: "1. Reproduce the check as the failing identity"}
+    - {cmd: "kubectl auth whoami", description: "2. Which identity are you really using?"}
+    - {cmd: "kubectl get rolebinding,clusterrolebinding -A -o wide | grep SA_OR_USER", description: "3. Which bindings apply?"}
+    - {cmd: "kubectl describe clusterrole ROLE", description: "4. What does the role actually allow?"}
+    - {cmd: "kubectl create rolebinding ci-edit --clusterrole=edit --serviceaccount=NS:SA -n NS", description: "5. Grant the minimum needed access"}
+  keywords: [forbidden, rbac, permission denied, cannot list resource, unauthorized, serviceaccount, access denied, is forbidden, clusterrole]
+  related: [kubectl-auth-can-i, kubectl-describe, kubectl-config-contexts]
+
+# ======================= LINUX =======================
+- id: ts-disk-full
+  tool: troubleshooting
+  category: linux
+  name: Disk full
+  syntax: df -hT && df -i
+  summary: Filesystem at 100% or out of inodes
+  description: "No space left on device can mean blocks or inodes. Also check deleted-but-open files, large logs, journal size and container images."
+  examples:
+    - {cmd: "df -hT && df -i", description: "1. Space and inodes per mount"}
+    - {cmd: "sudo du -xh --max-depth=1 /var | sort -rh | head", description: "2. Find the biggest directory, repeat deeper"}
+    - {cmd: "sudo lsof +L1", description: "3. Deleted files still held open (space not released until the process restarts)"}
+    - {cmd: "sudo journalctl --disk-usage && sudo journalctl --vacuum-size=500M", description: "4. Shrink the systemd journal"}
+    - {cmd: "docker system df && docker system prune", description: "5. Reclaim container images and build cache"}
+    - {cmd: "sudo find /var/log -type f -name '*.log' -size +100M", description: "6. Oversized logs"}
+  keywords: [no space left on device, disk full, disk saturation, out of space, inode exhausted, filesystem full, volume full, cleanup]
+  related: [linux-df, linux-du, linux-lsof, docker-system-df, docker-system-prune, linux-find]
+
+- id: ts-port-in-use
+  tool: troubleshooting
+  category: linux
+  name: Port already in use
+  syntax: sudo ss -tulpn | grep :PORT
+  summary: "Address already in use / bind failed"
+  examples:
+    - {cmd: "sudo ss -tulpn | grep :8080", description: "1. Which process listens on the port"}
+    - {cmd: "sudo lsof -i :8080", description: "2. Process details, user and command"}
+    - {cmd: "ps -fp PID", description: "3. Identify the owner of the PID"}
+    - {cmd: "docker ps --format '{{.Names}} {{.Ports}}' | grep 8080", description: "4. Maybe a container publishes it"}
+    - {cmd: "sudo systemctl stop SERVICE", description: "5. Stop the conflicting service, or change your app's port"}
+  keywords: [address already in use, eaddrinuse, port occupied, bind error, port conflict, cannot bind, listen failed, port busy]
+  related: [linux-ss, linux-lsof, docker-ps, linux-systemctl]
+
+- id: ts-service-failed
+  tool: troubleshooting
+  category: linux
+  name: systemd service in failed state
+  syntax: systemctl status UNIT -l --no-pager
+  summary: A service does not start or keeps stopping
+  examples:
+    - {cmd: "systemctl status UNIT -l --no-pager", description: "1. State, exit code and last log lines"}
+    - {cmd: "journalctl -u UNIT -b -p err --no-pager", description: "2. Errors since boot"}
+    - {cmd: "journalctl -u UNIT --since '10 min ago' -f", description: "3. Watch while retrying to start"}
+    - {cmd: "systemd-analyze verify /etc/systemd/system/UNIT.service", description: "4. Validate the unit file"}
+    - {cmd: "sudo systemctl daemon-reload && sudo systemctl restart UNIT", description: "5. After editing a unit"}
+    - {cmd: "systemctl list-units --failed", description: "6. Any other failed units?"}
+  keywords: [service not starting, failed, unit error, start failed, exit code, systemd, service crash, start request repeated too quickly]
+  related: [linux-systemctl, linux-journalctl, linux-ss]
+
+- id: ts-high-load
+  tool: troubleshooting
+  category: linux
+  name: High load / server is slow
+  syntax: uptime && top -bn1 | head -20
+  summary: Load average is high or the machine is unresponsive
+  description: High load can be CPU saturation, I/O wait, or memory pressure with swapping. Identify which resource is the bottleneck before acting.
+  examples:
+    - {cmd: "uptime && nproc", description: "1. Load average compared with CPU cores"}
+    - {cmd: "top -bn1 | head -15", description: "2. Heaviest processes, check the wa (I/O wait) and st (steal) percentages"}
+    - {cmd: "ps aux --sort=-%cpu | head -10", description: "3. Top CPU consumers"}
+    - {cmd: "free -h && vmstat 1 5", description: "4. Memory and swap activity (si/so columns)"}
+    - {cmd: "iostat -x 1 3", description: "5. Disk utilization and latency (package sysstat)"}
+    - {cmd: "sudo ss -s", description: "6. Socket counts, too many connections?"}
+  keywords: [high load, slow server, cpu 100, load average, system slow, unresponsive, iowait, swapping, performance, top]
+  related: [linux-df, linux-ss, linux-journalctl, ts-oom-killer]
+
+- id: ts-oom-killer
+  tool: troubleshooting
+  category: linux
+  name: Process killed by the OOM killer
+  syntax: sudo journalctl -k | grep -i 'killed process'
+  summary: The kernel ran out of memory and killed a process
+  examples:
+    - {cmd: "sudo journalctl -k | grep -i -E 'out of memory|killed process'", description: "1. Which process was killed and when"}
+    - {cmd: "free -h && swapon --show", description: "2. Available memory and swap"}
+    - {cmd: "ps aux --sort=-%mem | head -10", description: "3. Largest memory consumers"}
+    - {cmd: "systemctl show UNIT -p MemoryMax,MemoryHigh", description: "4. cgroup limits on the service"}
+    - {cmd: "cat /proc/PID/oom_score_adj", description: "5. How likely a process is to be chosen"}
+  keywords: [oom killer, out of memory, killed process, memory exhausted, oom, process killed, no memory, dmesg oom]
+  related: [linux-journalctl, ts-high-load, ts-oomkilled]
+
+- id: ts-dns-resolution
+  tool: troubleshooting
+  category: linux
+  name: DNS resolution problems on a host
+  syntax: resolvectl query example.com
+  summary: Names do not resolve, or resolve to the wrong address
+  examples:
+    - {cmd: "resolvectl status", description: "1. Which DNS servers and search domains are in use (systemd-resolved)"}
+    - {cmd: "dig +short example.com @8.8.8.8", description: "2. Does an external resolver answer?"}
+    - {cmd: "dig example.com", description: "3. Full answer and which server replied"}
+    - {cmd: "getent hosts example.com", description: "4. What applications see (honors /etc/hosts and nsswitch)"}
+    - {cmd: "cat /etc/resolv.conf", description: "5. Check nameserver entries"}
+    - {cmd: "sudo resolvectl flush-caches", description: "6. Clear a stale cache"}
+  keywords: [dns, cannot resolve, name resolution failed, temporary failure in name resolution, nslookup, dig, resolv.conf, no such host, domain not found]
+  related: [linux-ss, linux-systemctl, ts-k8s-dns]
+
+- id: ts-ssh-connection
+  tool: troubleshooting
+  category: linux
+  name: SSH connection fails
+  syntax: ssh -vvv USER@HOST
+  summary: Connection refused, timed out, or permission denied (publickey)
+  examples:
+    - {cmd: "ssh -vvv USER@HOST", description: "1. Verbose output shows where it fails: network, key offered, or server rejection"}
+    - {cmd: "nc -vz HOST 22", description: "2. Is the port reachable? (timeout means firewall, refused means sshd not listening)"}
+    - {cmd: "ssh -i ~/.ssh/KEY -o IdentitiesOnly=yes USER@HOST", description: "3. Force the right key"}
+    - {cmd: "chmod 700 ~/.ssh && chmod 600 ~/.ssh/authorized_keys ~/.ssh/KEY", description: "4. Wrong permissions make sshd ignore keys"}
+    - {cmd: "sudo journalctl -u ssh -n 50 --no-pager", description: "5. Server side reason (use sshd on RHEL)"}
+    - {cmd: "ssh-keygen -R HOST", description: "6. Clear a changed host key warning"}
+  keywords: [ssh error, permission denied publickey, connection refused, connection timed out, host key changed, cannot connect ssh, authentication failed, sshd]
+  related: [linux-ss, linux-journalctl, linux-systemctl]
+
+# ======================= DOCKER =======================
+- id: ts-docker-exits-immediately
+  tool: troubleshooting
+  category: docker
+  name: Container exits immediately
+  syntax: docker logs CONTAINER
+  summary: The container starts and stops right away with a non-zero or zero exit code
+  description: "A container lives only as long as its main process. Exit 0 with no foreground process, 1 for an app error, 126/127 for a bad command, 137 for a kill or OOM, 139 for a segfault."
+  examples:
+    - {cmd: "docker ps -a --filter name=CONTAINER --format '{{.Status}}'", description: "1. Exit code"}
+    - {cmd: "docker logs --tail 50 CONTAINER", description: "2. What the app printed before stopping"}
+    - {cmd: "docker inspect -f '{{.State.OOMKilled}} {{.State.ExitCode}} {{.Config.Cmd}} {{.Config.Entrypoint}}' CONTAINER", description: "3. OOM flag and the command that was run"}
+    - {cmd: "docker run --rm -it --entrypoint sh IMAGE", description: "4. Start a shell in the image to debug interactively"}
+  keywords: [container exits, exited 0, exited 1, container stops, container dies, docker run exits, entrypoint, no foreground process, exit code 137]
+  related: [docker-logs, docker-inspect, docker-run, docker-ps]
+
+- id: ts-docker-daemon-unreachable
+  tool: troubleshooting
+  category: docker
+  name: Cannot connect to the Docker daemon
+  syntax: systemctl status docker
+  summary: "Cannot connect to the Docker daemon at unix:///var/run/docker.sock"
+  examples:
+    - {cmd: "systemctl status docker --no-pager", description: "1. Is the daemon running?"}
+    - {cmd: "sudo systemctl start docker", description: "2. Start it, then enable at boot with enable --now"}
+    - {cmd: "ls -l /var/run/docker.sock && id", description: "3. Socket permissions and your groups"}
+    - {cmd: "sudo usermod -aG docker $USER && newgrp docker", description: "4. Allow your user to use Docker without sudo"}
+    - {cmd: "docker context ls", description: "5. A context may point to a remote or stopped host"}
+    - {cmd: "sudo journalctl -u docker -n 50 --no-pager", description: "6. Why the daemon failed to start"}
+  keywords: [cannot connect docker daemon, docker.sock, permission denied docker, is the docker daemon running, daemon not running, docker not starting]
+  related: [linux-systemctl, linux-journalctl, docker-info, docker-version]
+
+# ======================= TERRAFORM =======================
+- id: ts-terraform-state-lock
+  tool: troubleshooting
+  category: terraform
+  name: Terraform state lock
+  syntax: terraform force-unlock LOCK_ID
+  summary: "Error acquiring the state lock"
+  description: Another run holds the lock, or a previous run crashed without releasing it. Unlock only if you are sure nobody else is applying, otherwise you risk corrupting the state.
+  examples:
+    - {cmd: "terraform plan", description: "1. The error prints Lock Info: ID, Who, Created, Operation"}
+    - {cmd: "terraform plan -lock-timeout=5m", description: "2. If another job is legitimately running, simply wait"}
+    - {cmd: "terraform state pull > backup.tfstate", description: "3. Back up the state before intervening"}
+    - {cmd: "terraform force-unlock LOCK_ID", description: "4. Release the lock using the ID from the error"}
+    - {cmd: "aws dynamodb scan --table-name TF_LOCKS --max-items 5", description: "5. S3 backend: inspect the DynamoDB lock table"}
+  keywords: [lock state, state locked, force unlock, error acquiring the state lock, backend locked, stuck lock, dynamodb lock, ConditionalCheckFailedException]
+  related: [terraform-force-unlock, terraform-plan, terraform-state-pull]
+  danger: destructive
+
+- id: ts-terraform-drift
+  tool: troubleshooting
+  category: terraform
+  name: Plan shows unexpected changes (drift)
+  syntax: terraform plan -refresh-only
+  summary: Terraform wants to change or replace resources you did not touch
+  description: "Causes: manual changes in the console, provider upgrade changing defaults, computed attributes, a different workspace or variable file, or modified modules."
+  examples:
+    - {cmd: "terraform plan -refresh-only", description: "1. Separate real-world drift from code changes"}
+    - {cmd: "terraform workspace show && git status --short", description: "2. Right workspace, and no accidental local edits?"}
+    - {cmd: "terraform providers && git diff .terraform.lock.hcl", description: "3. Did a provider version change?"}
+    - {cmd: "terraform plan -out=tfplan && terraform show -json tfplan | jq '.resource_changes[] | select(.change.actions != [\"no-op\"]) | {a:.address, c:.change.actions}'", description: "4. Precise list of changes and actions"}
+    - {cmd: "terraform apply -refresh-only", description: "5. Accept benign drift into the state, or revert it in the console"}
+  keywords: [drift, unexpected changes, plan shows changes, forced replacement, must be replaced, out of band changes, manual change, perpetual diff, no changes expected]
+  related: [terraform-refresh, terraform-plan, terraform-show, terraform-providers]
+
+- id: ts-terraform-provider-auth
+  tool: troubleshooting
+  category: terraform
+  name: Provider authentication or permission errors
+  syntax: terraform plan
+  summary: "No valid credential sources found / AccessDenied / 403 from the cloud API"
+  examples:
+    - {cmd: "aws sts get-caller-identity", description: "1. Which identity does the AWS provider see? (az account show, gcloud auth list for other clouds)"}
+    - {cmd: "env | grep -E '^(AWS|ARM|GOOGLE)_' | sed 's/=.*/=<hidden>/'", description: "2. Which credential variables are set, without printing secrets"}
+    - {cmd: "TF_LOG=DEBUG terraform plan 2> debug.log", description: "3. Trace the API calls and the exact denied action"}
+    - {cmd: "terraform init -upgrade", description: "4. A stale provider can break newer auth methods"}
+    - {cmd: "grep -n 'profile\\|assume_role\\|region' *.tf", description: "5. Check provider block settings and the assumed role"}
+  keywords: [no valid credential sources, access denied, unauthorized, 403 forbidden, provider authentication, invalid credentials, expired token, assume role, permission error]
+  related: [terraform-init, terraform-plan, terraform-providers]
+
+# ======================= HELM =======================
+- id: ts-helm-operation-in-progress
+  tool: troubleshooting
+  category: helm
+  name: Helm "another operation is in progress"
+  syntax: helm history RELEASE -n NS
+  summary: "UPGRADE FAILED: another operation (install/upgrade/rollback) is in progress"
+  description: A previous run was interrupted and left the release in a pending-install, pending-upgrade or pending-rollback state. Verify nothing is running, then roll back or remove the stuck revision.
+  examples:
+    - {cmd: "helm history RELEASE -n NS", description: "1. Look for a revision with status pending-*"}
+    - {cmd: "helm list -n NS --pending", description: "2. Confirm the stuck release"}
+    - {cmd: "helm rollback RELEASE REVISION -n NS", description: "3. Roll back to the last deployed revision (the usual fix)"}
+    - {cmd: "kubectl get secret -n NS -l owner=helm,name=RELEASE,status=pending-upgrade", description: "4. If rollback fails, find the release secret"}
+    - {cmd: "kubectl delete secret -n NS sh.helm.release.v1.RELEASE.vN", description: "5. Last resort: delete only the stuck revision secret (vN)"}
+  keywords: [another operation in progress, pending upgrade, pending install, stuck release, helm locked, upgrade failed, release stuck, interrupted]
+  related: [helm-history, helm-rollback, helm-list, helm-status]
+  danger: caution
+
+- id: ts-helm-name-in-use
+  tool: troubleshooting
+  category: helm
+  name: Helm "cannot re-use a name that is still in use"
+  syntax: helm list -A --all | grep RELEASE
+  summary: "INSTALL FAILED: cannot re-use a name that is still in use"
+  examples:
+    - {cmd: "helm list -A --all | grep RELEASE", description: "1. Is the release present, maybe in another namespace or in failed state?"}
+    - {cmd: "helm upgrade --install RELEASE CHART -n NS", description: "2. Switch to the idempotent form for pipelines"}
+    - {cmd: "helm uninstall RELEASE -n NS", description: "3. Remove a failed leftover, then install again"}
+    - {cmd: "kubectl get secret -A -l owner=helm,name=RELEASE", description: "4. Orphaned release records after a manual namespace delete"}
+  keywords: [name still in use, cannot re-use a name, release exists, install failed, already exists, failed release, duplicate release]
+  related: [helm-list, helm-upgrade, helm-uninstall, helm-install]
+
+- id: ts-helm-upgrade-failed
+  tool: troubleshooting
+  category: helm
+  name: Helm upgrade failed or resources not ready
+  syntax: helm status RELEASE -n NS --show-resources
+  summary: "UPGRADE FAILED: timed out waiting for the condition / rendered manifests contain a resource that already exists"
+  examples:
+    - {cmd: "helm status RELEASE -n NS --show-resources", description: "1. Which resources are not ready"}
+    - {cmd: "kubectl get pods -n NS && kubectl describe pod POD -n NS", description: "2. Events of the failing pods"}
+    - {cmd: "helm diff upgrade RELEASE CHART -n NS -f values.yaml", description: "3. Compare what the upgrade tried to change"}
+    - {cmd: "helm template RELEASE CHART -f values.yaml --debug | kubectl apply --dry-run=server -f -", description: "4. Validate rendered manifests against the API (finds immutable field and ownership errors)"}
+    - {cmd: "helm rollback RELEASE -n NS --wait", description: "5. Return to the last good revision"}
+  keywords: [upgrade failed, timed out waiting for the condition, resource already exists, immutable field, invalid ownership metadata, helm error, failed release, rendered manifests]
+  related: [helm-status, helm-rollback, helm-diff-upgrade, helm-template, kubectl-describe-pod]
+
+# ======================= ANSIBLE =======================
+- id: ts-ansible-unreachable
+  tool: troubleshooting
+  category: ansible
+  name: Host UNREACHABLE
+  syntax: ansible HOST -m ping -vvv
+  summary: "UNREACHABLE! Failed to connect to the host via ssh"
+  examples:
+    - {cmd: "ansible HOST -m ping -vvv", description: "1. The verbose output shows the exact SSH command and error"}
+    - {cmd: "ssh -o BatchMode=yes USER@HOST true", description: "2. Reproduce with plain SSH using the same user and key"}
+    - {cmd: "ansible-inventory -i INVENTORY --host HOST", description: "3. Check ansible_host, ansible_user, ansible_port and key variables"}
+    - {cmd: "ansible HOST -m raw -a 'which python3'", description: "4. No Python on the target? Use raw to bootstrap it"}
+    - {cmd: "ansible HOST -m ping -e ansible_ssh_common_args='-o StrictHostKeyChecking=accept-new'", description: "5. First connection blocked by host key verification"}
+  keywords: [unreachable, ssh failed, cannot connect, connection timed out, permission denied, host key, no route to host, python not found, ansible ping failed]
+  related: [ansible-adhoc, ansible-inventory, ts-ssh-connection, ansible-config]
+
+- id: ts-ansible-become
+  tool: troubleshooting
+  category: ansible
+  name: Privilege escalation (become) fails
+  syntax: ansible-playbook site.yml -K -vvv
+  summary: "Missing sudo password / Incorrect sudo password / Timeout waiting for privilege escalation prompt"
+  examples:
+    - {cmd: "ansible-playbook site.yml -b -K", description: "1. Provide the sudo password interactively"}
+    - {cmd: "ansible HOST -m command -a 'sudo -n true' -vvv", description: "2. Check passwordless sudo on the target"}
+    - {cmd: "ansible-config dump --only-changed | grep -i become", description: "3. Which become settings are active (method, user, flags)"}
+    - {cmd: "ansible-playbook site.yml -e ansible_become_pass=@vault.yml --ask-vault-pass", description: "4. Keep the password in Vault instead of the command line"}
+  keywords: [become failed, sudo password, missing sudo password, privilege escalation, timeout waiting for privilege escalation prompt, permission denied, sudoers, become method]
+  related: [ansible-playbook, ansible-vault, ansible-config, ansible-adhoc]
+
+- id: ts-ansible-vault
+  tool: troubleshooting
+  category: ansible
+  name: Vault decryption errors
+  syntax: ansible-vault view FILE --ask-vault-pass
+  summary: "Decryption failed (no vault secrets were found that could decrypt)"
+  examples:
+    - {cmd: "ansible-vault view FILE --ask-vault-pass", description: "1. Verify the password decrypts the file at all"}
+    - {cmd: "head -1 FILE", description: "2. Header shows the format and the vault-id label ($ANSIBLE_VAULT;1.2;AES256;LABEL)"}
+    - {cmd: "ansible-playbook site.yml --vault-id prod@prompt --vault-id dev@~/.vault_dev", description: "3. Supply every vault-id the project uses"}
+    - {cmd: "grep -rn 'vault_password_file\\|vault_identity' ansible.cfg", description: "4. A configured password file may be stale"}
+    - {cmd: "ansible-vault rekey FILE", description: "5. Re-encrypt under a new password once you can decrypt"}
+  keywords: [vault decryption failed, no vault secrets, wrong password, vault id, cannot decrypt, encrypted file error, ansible vault password, vault label]
+  related: [ansible-vault, ansible-playbook, ansible-config]

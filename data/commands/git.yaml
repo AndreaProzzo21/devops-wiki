@@ -1,0 +1,684 @@
+# ======================= BASE =======================
+- id: git-init
+  tool: git
+  category: basics
+  name: git init
+  syntax: git init [-b BRANCH] [DIR]
+  summary: Creates a new repository
+  flags:
+    - {flag: "-b, --initial-branch", description: "Name of the initial branch (e.g. main)"}
+    - {flag: "--bare", description: "Repository without a working tree (for servers/remotes)"}
+  examples:
+    - {cmd: "git init -b main", description: "New repo with main branch"}
+  keywords: [nuovo repository, inizializza, crea repo, start]
+  related: [git-clone, git-remote, git-add]
+
+- id: git-clone
+  tool: git
+  category: basics
+  name: git clone
+  syntax: git clone [OPTIONS] URL [DIR]
+  summary: Clones a remote repository
+  flags:
+    - {flag: "--depth N", description: "Shallow clone (only the last N commits, faster in CI)"}
+    - {flag: "-b, --branch", description: "Branch or tag to check out"}
+    - {flag: "--recurse-submodules", description: "Also clones submodules"}
+    - {flag: "--filter=blob:none", description: "Partial clone, downloads files only when needed"}
+    - {flag: "--single-branch", description: "Downloads only one branch"}
+  examples:
+    - {cmd: "git clone --depth 1 https://github.com/org/repo.git", description: "Minimal clone for build/CI"}
+    - {cmd: "git clone --recurse-submodules git@github.com:org/repo.git", description: "With submodules"}
+  keywords: [scarica repository, copia repo, download progetto, clona]
+  related: [git-init, git-submodule, git-sparse-checkout, git-fetch]
+
+- id: git-status
+  tool: git
+  category: basics
+  name: git status
+  syntax: git status [-s] [-b]
+  summary: Shows the status of the working tree and staging area
+  flags:
+    - {flag: "-s, --short", description: "Compact output"}
+    - {flag: "-b, --branch", description: "Also shows branch and tracking"}
+    - {flag: "-uno", description: "Ignores untracked files"}
+  keywords: [stato repository, file modificati, cosa è cambiato, untracked, staged]
+  related: [git-diff, git-add, git-restore]
+
+- id: git-add
+  tool: git
+  category: basics
+  name: git add
+  syntax: git add [-p] [-A] PATH...
+  summary: Adds changes to the staging area
+  flags:
+    - {flag: "-p, --patch", description: "Interactively selects individual blocks (hunks)"}
+    - {flag: "-A, --all", description: "All changes, including deletions"}
+    - {flag: "-u, --update", description: "Only already-tracked files"}
+    - {flag: "-n, --dry-run", description: "Shows what would be added"}
+  examples:
+    - {cmd: "git add -p", description: "Atomic commits by selecting blocks"}
+  keywords: [prepara commit, staging, aggiungi file, stage, indice]
+  related: [git-commit, git-restore, git-status]
+
+- id: git-commit
+  tool: git
+  category: basics
+  name: git commit
+  syntax: git commit [-m MSG] [-a] [--amend]
+  summary: Records staged changes in a new commit
+  flags:
+    - {flag: "-m", description: "Inline message"}
+    - {flag: "-a", description: "Automatically includes modified tracked files"}
+    - {flag: "--amend", description: "Amends the last commit"}
+    - {flag: "--no-verify", description: "Skips pre-commit hooks (use with caution)"}
+    - {flag: "--allow-empty", description: "Commit with no changes (e.g. to trigger CI)"}
+    - {flag: "--fixup=COMMIT", description: "Fixup commit to be autosquashed"}
+    - {flag: "-S", description: "Signs the commit with GPG/SSH"}
+  examples:
+    - {cmd: "git commit -m 'fix: corregge timeout del login'", description: "Conventional Commits-style message"}
+    - {cmd: "git commit --amend --no-edit", description: "Adds files to the last commit without changing the message"}
+  keywords: [salva modifiche, crea commit, conferma, amend, modifica ultimo commit]
+  related: [git-add, git-push, git-reset, git-rebase-interactive]
+
+- id: git-diff
+  tool: git
+  category: basics
+  name: git diff
+  syntax: git diff [--staged] [COMMIT[..COMMIT]] [-- PATH]
+  summary: Shows differences between the working tree, staging area, and commits
+  flags:
+    - {flag: "--staged, --cached", description: "Differences between staging and the last commit"}
+    - {flag: "--stat", description: "Summary by file"}
+    - {flag: "--name-only", description: "File names only"}
+    - {flag: "-w", description: "Ignores whitespace"}
+    - {flag: "A...B", description: "Differences in B from the merge base with A"}
+  examples:
+    - {cmd: "git diff main...HEAD --stat", description: "What my branch brings compared to main"}
+  keywords: [differenze, confronta, modifiche, cosa cambia, compare]
+  related: [git-status, git-log, git-show]
+
+- id: git-rm
+  tool: git
+  category: basics
+  name: git rm
+  syntax: git rm [--cached] [-r] PATH...
+  summary: Removes files from the working tree and index
+  flags:
+    - {flag: "--cached", description: "Stops tracking the file but leaves it on disk"}
+    - {flag: "-r", description: "Recursive"}
+    - {flag: "-f", description: "Forces removal even with uncommitted changes"}
+  examples:
+    - {cmd: "git rm --cached .env", description: "Stops tracking a file added by mistake (then add it to .gitignore)"}
+  keywords: [elimina file, smetti di tracciare, untrack, cancella file, gitignore]
+  related: [git-mv, git-commit]
+  danger: caution
+
+- id: git-mv
+  tool: git
+  category: basics
+  name: git mv
+  syntax: git mv SRC DEST
+  summary: Moves or renames a file while preserving tracked history
+  keywords: [rinomina file, sposta file, move]
+  related: [git-rm, git-add]
+
+- id: git-clean
+  tool: git
+  category: basics
+  name: git clean
+  syntax: git clean [-n] [-f] [-d] [-x]
+  summary: Removes untracked files from the working tree
+  flags:
+    - {flag: "-n, --dry-run", description: "Shows what would be deleted (always use it first)"}
+    - {flag: "-f, --force", description: "Actually performs the operation"}
+    - {flag: "-d", description: "Includes directories"}
+    - {flag: "-x", description: "Also includes files ignored by .gitignore"}
+  examples:
+    - {cmd: "git clean -ndx", description: "Preview of a complete cleanup"}
+    - {cmd: "git clean -fdx", description: "Resets the working tree to a clean state"}
+  keywords: [pulisci repository, elimina untracked, file non tracciati, reset pulito]
+  related: [git-status, git-restore]
+  danger: destructive
+
+# ======================= BRANCH =======================
+- id: git-branch
+  tool: git
+  category: branches
+  name: git branch
+  syntax: git branch [-a] [-vv] [-d|-D BRANCH] [-m NEW]
+  summary: Lists, creates, renames, and deletes branches
+  flags:
+    - {flag: "-a, --all", description: "Local and remote"}
+    - {flag: "-vv", description: "Shows upstream and distance (ahead/behind)"}
+    - {flag: "-d", description: "Deletes an already-merged branch"}
+    - {flag: "-D", description: "Force-deletes even if not merged"}
+    - {flag: "-m", description: "Renames"}
+    - {flag: "--merged / --no-merged", description: "Filters by merge status"}
+    - {flag: "--sort=-committerdate", description: "Sorts by last commit"}
+  examples:
+    - {cmd: "git branch --merged main", description: "Branches already in main, candidates for cleanup"}
+    - {cmd: "git branch -vv", description: "See the tracking status of each branch"}
+  keywords: [elenca branch, crea branch, elimina branch, rinomina branch, lista rami]
+  related: [git-switch, git-checkout, git-merge, git-push]
+  danger: caution
+
+- id: git-switch
+  tool: git
+  category: branches
+  name: git switch
+  syntax: git switch [-c NEW] [-] BRANCH
+  summary: Switches branches (modern command, clearer than checkout)
+  flags:
+    - {flag: "-c, --create", description: "Creates and switches to the new branch"}
+    - {flag: "-", description: "Returns to the previous branch"}
+    - {flag: "--detach", description: "Switches to a commit in detached HEAD"}
+    - {flag: "-C", description: "Creates or resets the branch"}
+  examples:
+    - {cmd: "git switch -c feature/login", description: "New branch from the current point"}
+    - {cmd: "git switch -c fix/bug origin/main", description: "New branch from a remote reference"}
+  keywords: [cambia branch, passa a branch, crea branch, spostati, checkout branch]
+  related: [git-branch, git-checkout, git-restore]
+
+- id: git-checkout
+  tool: git
+  category: branches
+  name: git checkout
+  syntax: git checkout [-b NEW] BRANCH|COMMIT [-- PATH]
+  summary: Switches branches or restores files (legacy command; prefer switch/restore)
+  flags:
+    - {flag: "-b", description: "Creates and switches to the new branch"}
+    - {flag: "-- PATH", description: "Discards local changes to a file"}
+    - {flag: "--track", description: "Sets up tracking with the remote"}
+  keywords: [cambia branch, discard changes, restore file, legacy command]
+  related: [git-switch, git-restore]
+  danger: caution
+
+- id: git-merge
+  tool: git
+  category: branches
+  name: git merge
+  syntax: git merge [--no-ff] [--squash] [--abort] BRANCH
+  summary: Merges a branch into the current branch
+  flags:
+    - {flag: "--no-ff", description: "Always creates a merge commit"}
+    - {flag: "--squash", description: "Applies changes as a single commit to be created manually"}
+    - {flag: "--abort", description: "Aborts a conflicted merge"}
+    - {flag: "--ff-only", description: "Fails if it is not a fast-forward"}
+    - {flag: "-X ours|theirs", description: "Conflict resolution strategy"}
+  examples:
+    - {cmd: "git merge --no-ff feature/login", description: "Merge with an explicit commit"}
+    - {cmd: "git merge --abort", description: "Backs out after a merge full of conflicts"}
+  keywords: [unisci branch, merge, conflitto, risolvi conflitti, integra]
+  related: [git-rebase, git-diff, git-branch, git-revert]
+  danger: caution
+
+- id: git-rebase
+  tool: git
+  category: branches
+  name: git rebase
+  syntax: git rebase [--onto NEWBASE] [--continue|--abort|--skip] BASE
+  summary: Reapplies the current branch's commits on top of another base
+  description: Rewrites history. Do not do this on already-shared branches unless agreed with the team.
+  flags:
+    - {flag: "--continue / --abort / --skip", description: "Handles conflicts during rebase"}
+    - {flag: "--onto", description: "Moves a range of commits onto another base"}
+    - {flag: "--autostash", description: "Temporarily stashes local changes during the operation"}
+    - {flag: "--rebase-merges", description: "Preserves merge commits"}
+  examples:
+    - {cmd: "git fetch && git rebase origin/main", description: "Updates my branch on top of main"}
+    - {cmd: "git rebase --onto main feature-a feature-b", description: "Detaches feature-b from feature-a and puts it on main"}
+  keywords: [rebase, riscrivi storia, linearizza, aggiorna branch, sposta commit]
+  related: [git-merge, git-rebase-interactive, git-reflog, git-push-force]
+  danger: caution
+
+- id: git-rebase-interactive
+  tool: git
+  category: branches
+  name: git rebase -i
+  syntax: git rebase -i [--autosquash] HEAD~N | BASE
+  summary: Reorders, combines (squashes), edits, and deletes commits
+  description: "Actions in the editor: pick, reword, edit, squash, fixup, drop."
+  flags:
+    - {flag: "--autosquash", description: "Automatically reorders commits created with --fixup"}
+    - {flag: "-i, --interactive", description: "Opens the commit list"}
+  examples:
+    - {cmd: "git rebase -i HEAD~4", description: "Edits the last 4 commits"}
+    - {cmd: "git rebase -i --autosquash origin/main", description: "Arranges fixups before the PR"}
+  keywords: [squash commit, unisci commit, riordina commit, pulisci storia, cambia messaggio, fixup]
+  related: [git-rebase, git-commit, git-push-force, git-reflog]
+  danger: caution
+
+- id: git-cherry-pick
+  tool: git
+  category: branches
+  name: git cherry-pick
+  syntax: git cherry-pick [-x] [--continue|--abort] COMMIT...
+  summary: Applies one or more specific commits to the current branch
+  flags:
+    - {flag: "-x", description: "Adds the reference to the original commit to the message"}
+    - {flag: "-n, --no-commit", description: "Applies without creating the commit"}
+    - {flag: "-m 1", description: "Required to cherry-pick a merge commit"}
+    - {flag: "--abort", description: "Aborts in case of conflicts"}
+  examples:
+    - {cmd: "git cherry-pick -x a1b2c3d", description: "Brings a hotfix onto a release branch"}
+    - {cmd: "git cherry-pick A^..B", description: "Commit range from A to B, inclusive"}
+  keywords: [prendi commit, porta commit, backport, hotfix, copia commit]
+  related: [git-merge, git-log, git-revert]
+
+# ======================= REMOTE =======================
+- id: git-remote
+  tool: git
+  category: remote
+  name: git remote
+  syntax: git remote [-v] | add NAME URL | set-url NAME URL | remove NAME
+  summary: Manages remote repositories
+  examples:
+    - {cmd: "git remote -v", description: "Lists remotes with their URLs"}
+    - {cmd: "git remote add upstream https://github.com/org/repo.git", description: "Adds the original repository of a fork"}
+    - {cmd: "git remote set-url origin git@github.com:org/repo.git", description: "Switches from HTTPS to SSH"}
+  keywords: [remoti, origin, upstream, fork, cambia url, collega repository]
+  related: [git-fetch, git-push, git-clone]
+
+- id: git-fetch
+  tool: git
+  category: remote
+  name: git fetch
+  syntax: git fetch [--all] [--prune] [--tags] [REMOTE]
+  summary: Downloads objects and references from the remote without touching the working tree
+  flags:
+    - {flag: "--all", description: "All remotes"}
+    - {flag: "-p, --prune", description: "Deletes remote references that no longer exist"}
+    - {flag: "--tags", description: "Also downloads tags"}
+    - {flag: "--depth N", description: "Deepens or limits the history"}
+    - {flag: "--unshallow", description: "Converts a shallow clone into a complete clone"}
+  keywords: [scarica aggiornamenti, aggiorna remoti, prune, syncs without merge]
+  related: [git-pull, git-remote, git-rebase]
+
+- id: git-pull
+  tool: git
+  category: remote
+  name: git pull
+  syntax: git pull [--rebase] [--ff-only] [REMOTE [BRANCH]]
+  summary: Downloads from the remote and integrates into the current branch (fetch + merge/rebase)
+  flags:
+    - {flag: "--rebase", description: "Rebases instead of merging, linear history"}
+    - {flag: "--ff-only", description: "Fast-forward only, fails if branches have diverged"}
+    - {flag: "--autostash", description: "Temporarily stashes local changes"}
+  examples:
+    - {cmd: "git pull --rebase --autostash", description: "Updates without unnecessary merge commits"}
+  keywords: [aggiorna branch, scarica modifiche, sincronizza, update, pull]
+  related: [git-fetch, git-merge, git-rebase, git-push]
+  danger: caution
+
+- id: git-push
+  tool: git
+  category: remote
+  name: git push
+  syntax: git push [-u] [--tags] [REMOTE [BRANCH]]
+  summary: Pushes local commits to the remote
+  flags:
+    - {flag: "-u, --set-upstream", description: "Sets branch tracking"}
+    - {flag: "--tags", description: "Also pushes tags"}
+    - {flag: "--delete", description: "Deletes a remote branch or tag"}
+    - {flag: "--dry-run", description: "Simulates the push"}
+    - {flag: "--follow-tags", description: "Pushes only annotated tags associated with the pushed commits"}
+  examples:
+    - {cmd: "git push -u origin feature/login", description: "First push of a new branch"}
+    - {cmd: "git push origin --delete feature/old", description: "Deletes a remote branch"}
+  keywords: [invia commit, pubblica, upload, carica su remoto, push]
+  related: [git-pull, git-push-force, git-remote, git-tag]
+  danger: caution
+
+- id: git-push-force
+  tool: git
+  category: remote
+  name: git push --force-with-lease
+  syntax: git push --force-with-lease [--force-if-includes] REMOTE BRANCH
+  summary: Safer force push, fails if the remote changed since you fetched
+  description: Always use it instead of --force after a rebase or amend. Avoids overwriting other people's work.
+  flags:
+    - {flag: "--force-with-lease", description: "Forces only if the remote reference is the expected one"}
+    - {flag: "--force-if-includes", description: "Additional check: you have integrated the remote commits"}
+    - {flag: "-f, --force", description: "Overwrites without checks (dangerous)"}
+  examples:
+    - {cmd: "git push --force-with-lease origin feature/login", description: "After an interactive rebase"}
+  keywords: [force push, push forzato, sovrascrivi remoto, dopo rebase, rejected non fast-forward]
+  related: [git-rebase, git-rebase-interactive, git-push, git-reflog]
+  danger: destructive
+
+# ======================= HISTORY =======================
+- id: git-log
+  tool: git
+  category: history
+  name: git log
+  syntax: git log [--oneline] [--graph] [--author=X] [--since=D] [-- PATH]
+  summary: Shows the commit history
+  flags:
+    - {flag: "--oneline", description: "One commit per line"}
+    - {flag: "--graph --decorate --all", description: "Branch graph with labels"}
+    - {flag: "--author", description: "Filters by author"}
+    - {flag: "--since / --until", description: "Date range (e.g. '2 weeks ago')"}
+    - {flag: "-S 'testo'", description: "Commits that add/remove that string (pickaxe)"}
+    - {flag: "-G 'regex'", description: "Commits with changes matching the regex"}
+    - {flag: "--grep", description: "Searches commit messages"}
+    - {flag: "-p", description: "Shows changes for each commit"}
+    - {flag: "--stat", description: "Summary of changed files"}
+    - {flag: "--follow", description: "Follows a file across renames"}
+    - {flag: "A..B", description: "Commits in B not present in A"}
+  examples:
+    - {cmd: "git log --oneline --graph --decorate --all", description: "Visual overview of branches"}
+    - {cmd: "git log -S 'API_KEY' --oneline", description: "When a string appeared or disappeared"}
+    - {cmd: "git log origin/main..HEAD", description: "Commits not yet pushed"}
+  keywords: [cronologia, storico, vedi commit, history, chi ha cambiato, log]
+  related: [git-show, git-blame, git-diff, git-shortlog]
+
+- id: git-show
+  tool: git
+  category: history
+  name: git show
+  syntax: git show [--stat] COMMIT[:PATH]
+  summary: Shows a commit, tag, or file at a given revision
+  examples:
+    - {cmd: "git show a1b2c3d --stat", description: "Summary of a commit"}
+    - {cmd: "git show HEAD~3:src/app.py", description: "Contents of a file as it was 3 commits ago"}
+  keywords: [dettagli commit, contenuto commit, file vecchia version, ispeziona]
+  related: [git-log, git-diff, git-blame]
+
+- id: git-blame
+  tool: git
+  category: history
+  name: git blame
+  syntax: git blame [-L START,END] [-w] [-C] FILE
+  summary: Shows who last modified each line of a file
+  flags:
+    - {flag: "-L", description: "Limits to a range of lines"}
+    - {flag: "-w", description: "Ignores whitespace"}
+    - {flag: "-C", description: "Detects code moved/copied between files"}
+    - {flag: "--ignore-rev / --ignore-revs-file", description: "Ignores formatting-only commits"}
+  examples:
+    - {cmd: "git blame -L 40,60 -w src/app.py", description: "Authors of lines 40-60"}
+  keywords: [chi ha scritto, autore riga, responsabile modifica, annotate]
+  related: [git-log, git-show, git-bisect]
+
+- id: git-bisect
+  tool: git
+  category: history
+  name: git bisect
+  syntax: git bisect start | bad [C] | good [C] | run CMD | reset
+  summary: Binary search for the commit that introduced a bug
+  examples:
+    - {cmd: "git bisect start && git bisect bad && git bisect good v1.2.0", description: "Starts between HEAD (broken) and v1.2.0 (working)"}
+    - {cmd: "git bisect run ./test.sh", description: "Automates with a script (exit 0 = good)"}
+    - {cmd: "git bisect reset", description: "Returns to the original branch after the search"}
+  keywords: [trova bug, regression, which commit broke it, binary search, history debugging]
+  related: [git-log, git-blame, git-switch]
+
+- id: git-shortlog
+  tool: git
+  category: history
+  name: git shortlog
+  syntax: git shortlog [-sn] [--since=D]
+  summary: Summarizes commits by author
+  flags:
+    - {flag: "-s", description: "Count only"}
+    - {flag: "-n", description: "Sorts by number of commits"}
+    - {flag: "-e", description: "Shows email addresses"}
+  keywords: [contributori, chi ha contribuito, statistiche, conteggio commit]
+  related: [git-log]
+
+- id: git-grep
+  tool: git
+  category: history
+  name: git grep
+  syntax: git grep [-n] [-i] [-w] PATTERN [REV] [-- PATH]
+  summary: Searches text in tracked files (much faster than grep -r)
+  flags:
+    - {flag: "-n", description: "Line numbers"}
+    - {flag: "-i", description: "Ignores case"}
+    - {flag: "-w", description: "Whole word"}
+    - {flag: "--count", description: "Count per file"}
+    - {flag: "-e P1 --and -e P2", description: "Combines multiple patterns"}
+  examples:
+    - {cmd: "git grep -n 'TODO' -- '*.py'", description: "All TODOs in Python source files"}
+    - {cmd: "git grep 'old_function' v1.0", description: "Searches in a past revision"}
+  keywords: [cerca nel codice, trova stringa, ricerca testo, search code]
+  related: [git-log, git-ls-files]
+
+- id: git-ls-files
+  tool: git
+  category: history
+  name: git ls-files
+  syntax: git ls-files [-o] [-i] [--exclude-standard]
+  summary: Lists tracked (or untracked/ignored) files
+  flags:
+    - {flag: "-o", description: "Untracked files"}
+    - {flag: "-i", description: "Ignored files"}
+    - {flag: "--exclude-standard", description: "Applies .gitignore"}
+  examples:
+    - {cmd: "git ls-files -o -i --exclude-standard", description: "What is ignored by .gitignore"}
+  keywords: [elenca file tracciati, file ignorati, gitignore, debug ignore]
+  related: [git-status, git-grep, git-rm]
+
+- id: git-describe
+  tool: git
+  category: history
+  name: git describe
+  syntax: git describe [--tags] [--always] [--dirty]
+  summary: Human-readable name of a commit based on the latest tag (e.g. v1.2-5-gabc123)
+  examples:
+    - {cmd: "git describe --tags --always --dirty", description: "Version string for builds and CI"}
+  keywords: [version corrente, ultimo tag, numero version, build version]
+  related: [git-tag, git-log]
+
+# ======================= UNDO / RECOVERY =======================
+- id: git-restore
+  tool: git
+  category: recovery
+  name: git restore
+  syntax: git restore [--staged] [--source=REV] PATH...
+  summary: Restores working-tree files or removes files from the staging area
+  flags:
+    - {flag: "--staged", description: "Removes from staging (like reset HEAD FILE)"}
+    - {flag: "-S -W", description: "Staging and working tree together"}
+    - {flag: "--source", description: "Restores from a specific commit or branch"}
+    - {flag: "-p", description: "Interactive block selection"}
+  examples:
+    - {cmd: "git restore --staged file.txt", description: "Undoes git add"}
+    - {cmd: "git restore file.txt", description: "Discards local uncommitted changes"}
+    - {cmd: "git restore --source=HEAD~2 config.yml", description: "Restores a file to its state 2 commits ago"}
+  keywords: [undo changes, discard changes, unstage, go back file, restore file]
+  related: [git-switch, git-reset, git-status, git-clean]
+  danger: caution
+
+- id: git-reset
+  tool: git
+  category: recovery
+  name: git reset
+  syntax: git reset [--soft|--mixed|--hard] [COMMIT]
+  summary: Moves HEAD (and optionally the index and working tree) to another commit
+  description: "--soft keeps the index and files; --mixed (default) keeps the files; --hard discards everything."
+  flags:
+    - {flag: "--soft", description: "Undoes the commit, changes remain staged"}
+    - {flag: "--mixed", description: "Undoes commit and staging, files remain intact"}
+    - {flag: "--hard", description: "Undoes everything, loses uncommitted changes"}
+    - {flag: "--keep", description: "Like --hard but does not overwrite local changes"}
+  examples:
+    - {cmd: "git reset --soft HEAD~1", description: "Undoes the last commit while keeping changes staged"}
+    - {cmd: "git reset --hard origin/main", description: "Aligns the branch with the remote, discarding local changes"}
+  keywords: [annulla commit, go back, undo commit, delete commit, hard reset]
+  related: [git-revert, git-reflog, git-restore, git-commit]
+  danger: destructive
+
+- id: git-revert
+  tool: git
+  category: recovery
+  name: git revert
+  syntax: git revert [-m 1] [--no-commit] COMMIT...
+  summary: Creates a new commit that undoes a previous commit (safe on shared branches)
+  flags:
+    - {flag: "-m 1", description: "Required to undo a merge commit"}
+    - {flag: "-n, --no-commit", description: "Applies without committing, useful for multiple reverts"}
+  examples:
+    - {cmd: "git revert a1b2c3d", description: "Undoes an already-pushed commit"}
+    - {cmd: "git revert -m 1 MERGE_SHA", description: "Undoes a merge"}
+  keywords: [undo published commit, reverse commit, shared undo, rollback]
+  related: [git-reset, git-cherry-pick, git-merge]
+
+- id: git-reflog
+  tool: git
+  category: recovery
+  name: git reflog
+  syntax: git reflog [show] [REF]
+  summary: Log of all HEAD movements, the safety net for recovering lost work
+  description: Recovers commits after reset --hard, bad rebases, or deleted branches (until gc expires, ~90 days).
+  examples:
+    - {cmd: "git reflog", description: "Finds the SHA of where you were before the mistake"}
+    - {cmd: "git reset --hard HEAD@{2}", description: "Returns to the state from two moves ago"}
+    - {cmd: "git switch -c recovery a1b2c3d", description: "Recreates a deleted branch from an SHA found in the reflog"}
+  keywords: [recover commits, lost work, deleted branch, undo hard reset, undo rebase, disaster]
+  related: [git-reset, git-rebase, git-branch, git-fsck]
+
+- id: git-fsck
+  tool: git
+  category: recovery
+  name: git fsck
+  syntax: git fsck [--lost-found] [--unreachable]
+  summary: Checks repository integrity and finds unreachable objects (dangling commits)
+  keywords: [lost objects, dangling commit, corrupted repository, integrity check, recovery]
+  related: [git-reflog, git-gc]
+
+- id: git-gc
+  tool: git
+  category: recovery
+  name: git gc
+  syntax: git gc [--aggressive] [--prune=now]
+  summary: Garbage collection, compresses the repository and removes unreachable objects
+  flags:
+    - {flag: "--aggressive", description: "Deeper compression, slower"}
+    - {flag: "--prune=now", description: "Immediately deletes orphaned objects (makes expired reflog data unrecoverable)"}
+  keywords: [repository cleanup, optimize, reduce size, large repo, compression]
+  related: [git-fsck, git-reflog]
+  danger: caution
+
+# ======================= STASH / TAG =======================
+- id: git-stash
+  tool: git
+  category: stash-tags
+  name: git stash
+  syntax: git stash [push -m MSG] [-u] | list | pop | apply | drop | show -p
+  summary: Stashes uncommitted changes to resume them later
+  flags:
+    - {flag: "-u, --include-untracked", description: "Includes untracked files"}
+    - {flag: "-a, --all", description: "Also includes ignored files"}
+    - {flag: "-m", description: "Descriptive message"}
+    - {flag: "pop", description: "Reapplies and removes the stash"}
+    - {flag: "apply", description: "Reapplies it and keeps it"}
+    - {flag: "stash@{N}", description: "Selects a specific stash"}
+    - {flag: "-p", description: "Interactively selects what to stash"}
+  examples:
+    - {cmd: "git stash push -u -m 'wip login form'", description: "Also saves new files with a name"}
+    - {cmd: "git stash list", description: "Lists stashes"}
+    - {cmd: "git stash pop", description: "Restores the latest stash"}
+    - {cmd: "git stash branch fix/wip stash@{0}", description: "Creates a branch from the stash"}
+  keywords: [stash, save temporarily, switch branches with changes, wip, set aside]
+  related: [git-switch, git-status, git-restore]
+
+- id: git-tag
+  tool: git
+  category: stash-tags
+  name: git tag
+  syntax: git tag [-a] [-m MSG] [-d] [-l PATTERN] NAME [COMMIT]
+  summary: Creates, lists, and deletes tags (e.g. release versions)
+  flags:
+    - {flag: "-a, -m", description: "Annotated tag with message (recommended for releases)"}
+    - {flag: "-s", description: "Signed tag"}
+    - {flag: "-l", description: "Lists using a pattern (e.g. 'v1.*')"}
+    - {flag: "-d", description: "Deletes a local tag"}
+    - {flag: "-f", description: "Moves an existing tag"}
+  examples:
+    - {cmd: "git tag -a v1.4.0 -m 'Release 1.4.0' && git push origin v1.4.0", description: "Creates and publishes a release"}
+    - {cmd: "git push origin --delete v1.4.0", description: "Deletes a tag from the remote"}
+  keywords: [version, release, commit label, tag, semver]
+  related: [git-push, git-describe, git-log]
+
+# ======================= ADVANCED =======================
+- id: git-worktree
+  tool: git
+  category: advanced
+  name: git worktree
+  syntax: git worktree add [-b NEW] PATH [BRANCH] | list | remove PATH | prune
+  summary: Multiple working trees from the same repository, branches in different folders without stashing
+  examples:
+    - {cmd: "git worktree add ../hotfix -b hotfix/urgent origin/main", description: "Work on a hotfix without touching the work in progress"}
+    - {cmd: "git worktree remove ../hotfix", description: "Removes the folder when finished"}
+  keywords: [multiple branches simultaneously, avoids stash, multiple folders, parallel]
+  related: [git-switch, git-stash, git-branch]
+
+- id: git-submodule
+  tool: git
+  category: advanced
+  name: git submodule
+  syntax: git submodule add URL [PATH] | update --init --recursive | status
+  summary: Includes other repositories inside the current repository
+  flags:
+    - {flag: "update --init --recursive", description: "Initializes and downloads submodules (including nested ones)"}
+    - {flag: "update --remote", description: "Updates submodules to the latest commit of their branch"}
+    - {flag: "foreach CMD", description: "Runs a command in every submodule"}
+  examples:
+    - {cmd: "git submodule update --init --recursive", description: "After a clone without --recurse-submodules"}
+  keywords: [submodule, repo inside repo, git dependency, vendor, nested]
+  related: [git-clone, git-status]
+
+- id: git-sparse-checkout
+  tool: git
+  category: advanced
+  name: git sparse-checkout
+  syntax: git sparse-checkout set DIR... | add DIR | disable
+  summary: Checks out only selected directories, useful in huge monorepos
+  examples:
+    - {cmd: "git clone --filter=blob:none --sparse URL && cd repo && git sparse-checkout set services/api", description: "Monorepo: only the required folder"}
+  keywords: [monorepo, partial checkout, only one folder, large repo, sparse]
+  related: [git-clone, git-worktree]
+
+- id: git-config
+  tool: git
+  category: advanced
+  name: git config
+  syntax: git config [--global|--local|--system] [--list] [--unset] KEY [VALUE]
+  summary: Reads and sets Git configuration
+  flags:
+    - {flag: "--global", description: "User configuration (~/.gitconfig)"}
+    - {flag: "--local", description: "This repository only"}
+    - {flag: "--list --show-origin", description: "Shows all settings and the source file"}
+    - {flag: "-e", description: "Opens the file in the editor"}
+  examples:
+    - {cmd: "git config --global user.name 'Mario Rossi' && git config --global user.email mario@example.com", description: "Identity for commits"}
+    - {cmd: "git config --global pull.rebase true", description: "Pull with rebase by default"}
+    - {cmd: "git config --global init.defaultBranch main", description: "Initial main branch"}
+    - {cmd: "git config --global alias.lg 'log --oneline --graph --decorate --all'", description: "Creates the git lg alias"}
+    - {cmd: "git config --global rerere.enabled true", description: "Remembers conflict resolutions"}
+  keywords: [configuration, settings, name email, alias, initial setup, gitconfig]
+  related: [git-init, git-commit]
+
+- id: git-archive
+  tool: git
+  category: advanced
+  name: git archive
+  syntax: git archive [--format=zip|tar.gz] [-o FILE] [--prefix=DIR/] REV
+  summary: Exports a revision as an archive without the .git directory
+  examples:
+    - {cmd: "git archive --format=tar.gz --prefix=app-1.4.0/ -o app-1.4.0.tar.gz v1.4.0", description: "Source package of a release"}
+  keywords: [export source, create zip, release tarball, without .git, package]
+  related: [git-tag, git-describe]
+
+- id: git-format-patch
+  tool: git
+  category: advanced
+  name: git format-patch / am
+  syntax: git format-patch [-N] [REV] ; git am FILE.patch
+  summary: Exports commits as patches and applies them with am while preserving author and message
+  examples:
+    - {cmd: "git format-patch -3", description: "Patch for the last 3 commits"}
+    - {cmd: "git am 0001-fix.patch", description: "Applies a patch as a commit"}
+  keywords: [patch, send changes by email, export commits, apply patch, file diff]
+  related: [git-cherry-pick, git-diff]

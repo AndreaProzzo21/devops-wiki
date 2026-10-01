@@ -1,0 +1,260 @@
+# ======================= PLAYBOOKS =======================
+- id: ansible-playbook
+  tool: ansible
+  category: playbooks
+  name: ansible-playbook
+  syntax: ansible-playbook -i INVENTORY PLAYBOOK.yml [--check] [--diff] [-l HOSTS] [-e VARS] [--tags TAGS]
+  summary: Run one or more playbooks against an inventory
+  description: The main entry point for configuration management. Always preview with --check --diff before touching production.
+  flags:
+    - {flag: "-i, --inventory", description: "Inventory file, directory or comma-separated host list (e.g. -i 'web1,web2,')"}
+    - {flag: "-C, --check", description: "Dry run, predicts changes without applying them"}
+    - {flag: "-D, --diff", description: "Show before/after differences for changed files and templates"}
+    - {flag: "-l, --limit", description: "Restrict the run to hosts or groups (supports patterns like 'web:!web03')"}
+    - {flag: "-e, --extra-vars", description: "Extra variables as key=value, or @file.yml to load a file; highest precedence"}
+    - {flag: "-t, --tags", description: "Run only tasks with these tags"}
+    - {flag: "--skip-tags", description: "Skip tasks with these tags"}
+    - {flag: "-b, --become", description: "Run tasks with privilege escalation (sudo)"}
+    - {flag: "-K, --ask-become-pass", description: "Prompt for the sudo password"}
+    - {flag: "-u, --user", description: "Remote SSH user"}
+    - {flag: "--private-key", description: "SSH private key file"}
+    - {flag: "-f, --forks", description: "Parallel connections (default 5)"}
+    - {flag: "--start-at-task", description: "Start execution at the task with this name"}
+    - {flag: "--step", description: "Confirm each task before running it"}
+    - {flag: "--ask-vault-pass / --vault-password-file", description: "Provide the Vault password to decrypt secrets"}
+    - {flag: "-v ... -vvvv", description: "Increase verbosity; -vvv shows SSH details, -vvvv shows connection debugging"}
+    - {flag: "--force-handlers", description: "Run handlers even if a task failed"}
+  examples:
+    - {cmd: "ansible-playbook -i inventories/prod site.yml --check --diff -l web", description: "Dry run on the web group, with file diffs"}
+    - {cmd: "ansible-playbook -i prod site.yml -e 'app_version=2.4.1 env=prod'", description: "Pass variables on the command line"}
+    - {cmd: "ansible-playbook -i prod site.yml -e @vars/prod.yml --tags deploy --skip-tags migrations", description: "Load a vars file and select tasks by tag"}
+    - {cmd: "ansible-playbook -i prod site.yml -l 'web:!web03' --become -K", description: "All web hosts except web03, asking for sudo password"}
+    - {cmd: "ansible-playbook site.yml --start-at-task 'Restart nginx' -vv", description: "Resume from a failed task"}
+    - {cmd: "ansible-playbook -i prod site.yml --vault-password-file ~/.vault_pass", description: "Run a playbook that uses vaulted variables"}
+  keywords: [run playbook, execute playbook, automation, configuration management, deploy, provisioning, apply configuration, dry run]
+  related: [ansible-playbook-validate, ansible-adhoc, ansible-vault, ansible-inventory, ansible-lint]
+  danger: caution
+
+- id: ansible-playbook-validate
+  tool: ansible
+  category: playbooks
+  name: ansible-playbook --syntax-check / --list-*
+  syntax: ansible-playbook PLAYBOOK.yml --syntax-check | --list-tasks | --list-hosts | --list-tags
+  summary: Validate a playbook and preview what it would target without running it
+  description: Safe introspection options. Use them in CI and before a risky run to verify the playbook parses and hits the expected hosts.
+  flags:
+    - {flag: "--syntax-check", description: "Parse the playbook and report syntax errors, executes nothing"}
+    - {flag: "--list-tasks", description: "Print every task that would run, in order"}
+    - {flag: "--list-hosts", description: "Print the hosts matched by each play"}
+    - {flag: "--list-tags", description: "Print all available tags"}
+  examples:
+    - {cmd: "ansible-playbook -i prod site.yml --syntax-check", description: "CI gate for syntax errors"}
+    - {cmd: "ansible-playbook -i prod site.yml --list-hosts -l web", description: "Confirm which hosts a limit actually selects"}
+    - {cmd: "ansible-playbook -i prod site.yml --list-tasks --tags deploy", description: "See exactly which tasks a tag selects"}
+  keywords: [validate playbook, syntax check, list tasks, list hosts, list tags, preview, lint yaml, verify]
+  related: [ansible-playbook, ansible-lint, ansible-inventory]
+
+- id: ansible-pull
+  tool: ansible
+  category: playbooks
+  name: ansible-pull
+  syntax: ansible-pull -U REPO_URL [-C BRANCH] [-i localhost,] [PLAYBOOK.yml]
+  summary: Pull a playbook from git and run it locally on the host
+  description: Inverts the push model, each host pulls its own configuration. Handy for autoscaling groups and large fleets, typically triggered from cron or a systemd timer.
+  flags:
+    - {flag: "-U, --url", description: "Git repository URL containing the playbooks"}
+    - {flag: "-C, --checkout", description: "Branch, tag or commit to use"}
+    - {flag: "-d, --directory", description: "Where to check out the repository"}
+    - {flag: "-o, --only-if-changed", description: "Run the playbook only if the repository changed"}
+    - {flag: "--purge", description: "Delete the checkout after the run"}
+    - {flag: "-i", description: "Inventory, defaults to the local host"}
+  examples:
+    - {cmd: "ansible-pull -U https://github.com/org/infra.git -C main -o local.yml", description: "Pull and apply only when something changed"}
+    - {cmd: "ansible-pull -U git@github.com:org/infra.git -i localhost, site.yml --tags base", description: "Apply just the base role on this host"}
+  keywords: [pull mode, git pull, self configuration, autoscaling, cron, agentless pull, bootstrap]
+  related: [ansible-playbook, ansible-galaxy-install]
+  danger: caution
+
+# ======================= AD-HOC =======================
+- id: ansible-adhoc
+  tool: ansible
+  category: adhoc
+  name: ansible (ad-hoc)
+  syntax: ansible PATTERN -m MODULE [-a 'ARGS'] [-b] [-i INVENTORY]
+  summary: Run a single module on one or many hosts, no playbook needed
+  description: Perfect for quick checks and one-off fixes across a fleet, such as restarting a service or collecting facts.
+  flags:
+    - {flag: "-m, --module-name", description: "Module to run (ping, command, shell, copy, apt, service, ...)"}
+    - {flag: "-a, --args", description: "Module arguments"}
+    - {flag: "-b, --become", description: "Run with privilege escalation"}
+    - {flag: "-i", description: "Inventory to use"}
+    - {flag: "-f, --forks", description: "Parallel connections"}
+    - {flag: "-o, --one-line", description: "Condense output to one line per host"}
+    - {flag: "-u, --user", description: "Remote user"}
+    - {flag: "-C, --check", description: "Dry run where the module supports it"}
+    - {flag: "--list-hosts", description: "Only show the matched hosts"}
+  examples:
+    - {cmd: "ansible all -m ping", description: "Test connectivity and Python on every host"}
+    - {cmd: "ansible web -b -m service -a 'name=nginx state=restarted'", description: "Restart nginx on the web group"}
+    - {cmd: "ansible db -m command -a 'df -h /var/lib/postgresql' -o", description: "Check disk space on database hosts"}
+    - {cmd: "ansible all -m setup -a 'filter=ansible_distribution*'", description: "Gather OS facts"}
+    - {cmd: "ansible web -b -m apt -a 'name=nginx state=latest update_cache=yes'", description: "Install or upgrade a package"}
+    - {cmd: "ansible web -m copy -a 'src=./app.conf dest=/etc/app/app.conf mode=0644' -b", description: "Push a file"}
+    - {cmd: "ansible all -m user -a 'name=deploy state=present groups=sudo' -b", description: "Create a user"}
+    - {cmd: "ansible app01 -m fetch -a 'src=/var/log/app.log dest=./logs/'", description: "Download a file from a host"}
+    - {cmd: "ansible 'web:&prod' --list-hosts", description: "Hosts in both groups web and prod"}
+  keywords: [ping hosts, remote command, single command, ad hoc, run on all servers, restart service, install package, gather facts, copy file]
+  related: [ansible-playbook, ansible-inventory, ansible-doc]
+  danger: caution
+
+# ======================= SECURITY =======================
+- id: ansible-vault
+  tool: ansible
+  category: security
+  name: ansible-vault
+  syntax: ansible-vault create|encrypt|decrypt|edit|view|rekey FILE [--vault-id LABEL@SOURCE]
+  summary: Encrypt and manage files containing secrets
+  description: Files are encrypted with AES256 and can be committed safely. Pair with --vault-password-file in CI.
+  flags:
+    - {flag: "create", description: "Create a new encrypted file and open it in your editor"}
+    - {flag: "encrypt / decrypt", description: "Encrypt or decrypt an existing file in place"}
+    - {flag: "edit / view", description: "Edit or display an encrypted file without leaving plaintext on disk"}
+    - {flag: "rekey", description: "Change the vault password"}
+    - {flag: "--vault-id", description: "Label for multiple vault passwords (e.g. dev@prompt, prod@~/.pass_prod)"}
+    - {flag: "--vault-password-file", description: "Read the password from a file or executable script"}
+    - {flag: "--ask-vault-pass", description: "Prompt for the password"}
+  examples:
+    - {cmd: "ansible-vault encrypt group_vars/prod/secrets.yml", description: "Encrypt an existing file"}
+    - {cmd: "ansible-vault edit group_vars/prod/secrets.yml", description: "Safely edit secrets"}
+    - {cmd: "ansible-vault view group_vars/prod/secrets.yml --vault-password-file ~/.vault_pass", description: "Read without a prompt"}
+    - {cmd: "ansible-vault rekey --new-vault-password-file ~/.new_pass group_vars/prod/secrets.yml", description: "Rotate the password"}
+  keywords: [encrypt, secrets, passwords, decrypt, credentials, protect variables, secure files]
+  related: [ansible-vault-encrypt-string, ansible-playbook]
+
+- id: ansible-vault-encrypt-string
+  tool: ansible
+  category: security
+  name: ansible-vault encrypt_string
+  syntax: ansible-vault encrypt_string [--name VAR] 'VALUE'
+  summary: Encrypt a single value to paste inline into a vars file
+  description: Keeps variable files readable in diffs while only the secret value is encrypted.
+  flags:
+    - {flag: "--name", description: "Variable name to emit in the YAML output"}
+    - {flag: "--stdin-name", description: "Read the value from stdin (keeps it out of shell history)"}
+    - {flag: "--vault-id", description: "Vault label to encrypt with"}
+  examples:
+    - {cmd: "ansible-vault encrypt_string --name db_password 'S3cr3t!'", description: "Produces a ready-to-paste !vault block"}
+    - {cmd: "echo -n 'S3cr3t!' | ansible-vault encrypt_string --stdin-name db_password", description: "Avoid leaving the secret in history"}
+  keywords: [inline secret, encrypt variable, single value, encrypt password, vault string]
+  related: [ansible-vault, ansible-playbook]
+
+# ======================= GALAXY =======================
+- id: ansible-galaxy-install
+  tool: ansible
+  category: galaxy
+  name: ansible-galaxy install
+  syntax: ansible-galaxy [role|collection] install NAME | -r requirements.yml [-p PATH]
+  summary: Install roles and collections from Galaxy, git or tarballs
+  flags:
+    - {flag: "-r, --role-file / --requirements-file", description: "Install everything listed in a requirements.yml"}
+    - {flag: "-p, --roles-path / --collections-path", description: "Install to a specific directory (use ./roles or ./collections to vendor into the repo)"}
+    - {flag: "--force", description: "Overwrite already installed versions"}
+    - {flag: "-U, --upgrade", description: "Upgrade collections to the latest allowed version"}
+    - {flag: "collection list", description: "Show installed collections"}
+  examples:
+    - {cmd: "ansible-galaxy collection install community.general kubernetes.core", description: "Install collections"}
+    - {cmd: "ansible-galaxy install -r requirements.yml -p ./roles", description: "Install pinned roles into the project"}
+    - {cmd: "ansible-galaxy collection install -r requirements.yml -p ./collections", description: "Pinned collections for reproducible CI"}
+    - {cmd: "ansible-galaxy collection list", description: "See what is installed and where"}
+  keywords: [install role, install collection, dependencies, requirements, galaxy, download roles, community modules]
+  related: [ansible-galaxy-init, ansible-playbook, ansible-doc]
+
+- id: ansible-galaxy-init
+  tool: ansible
+  category: galaxy
+  name: ansible-galaxy init
+  syntax: ansible-galaxy [role|collection] init NAME
+  summary: Scaffold a new role or collection with the standard directory layout
+  flags:
+    - {flag: "--init-path", description: "Parent directory for the new skeleton"}
+    - {flag: "--force", description: "Overwrite an existing directory"}
+  examples:
+    - {cmd: "ansible-galaxy role init roles/nginx", description: "Role skeleton: tasks, handlers, defaults, templates, meta"}
+    - {cmd: "ansible-galaxy collection init myorg.platform", description: "Collection skeleton"}
+  keywords: [create role, new role, scaffold, skeleton, role structure, boilerplate]
+  related: [ansible-galaxy-install, ansible-lint]
+
+# ======================= INVENTORY / TOOLING =======================
+- id: ansible-inventory
+  tool: ansible
+  category: inventory
+  name: ansible-inventory
+  syntax: ansible-inventory -i INVENTORY [--list|--graph|--host HOST] [--vars]
+  summary: Inspect how Ansible sees your inventory, groups and variables
+  description: Essential for debugging variable precedence and dynamic inventories (AWS, Azure, GCP, Kubernetes).
+  flags:
+    - {flag: "--list", description: "Full inventory as JSON, including resolved variables"}
+    - {flag: "--graph", description: "Group/host tree"}
+    - {flag: "--vars", description: "Include variables in --graph output"}
+    - {flag: "--host", description: "All variables for one host"}
+    - {flag: "-y, --yaml", description: "YAML output instead of JSON"}
+  examples:
+    - {cmd: "ansible-inventory -i prod --graph --vars", description: "Visualize groups with their variables"}
+    - {cmd: "ansible-inventory -i prod --host web01 -y", description: "See every variable that applies to web01"}
+    - {cmd: "ansible-inventory -i aws_ec2.yml --list", description: "Check what a dynamic inventory returns"}
+  keywords: [inventory, hosts, groups, variables, precedence, dynamic inventory, debug variables, list hosts]
+  related: [ansible-playbook, ansible-adhoc, ansible-config]
+
+- id: ansible-doc
+  tool: ansible
+  category: inventory
+  name: ansible-doc
+  syntax: ansible-doc [-l] [-s] [-t TYPE] MODULE
+  summary: Read module documentation offline from the terminal
+  flags:
+    - {flag: "-l, --list", description: "List available plugins and modules"}
+    - {flag: "-s, --snippet", description: "Short snippet of the arguments"}
+    - {flag: "-t, --type", description: "Plugin type (module, lookup, filter, callback, ...)"}
+    - {flag: "-F", description: "Show the file path of each plugin"}
+  examples:
+    - {cmd: "ansible-doc ansible.builtin.copy", description: "Full docs and examples for the copy module"}
+    - {cmd: "ansible-doc -l | grep -i aws", description: "Find AWS modules"}
+    - {cmd: "ansible-doc -t lookup -l", description: "List lookup plugins"}
+  keywords: [module documentation, module help, man page, module arguments, plugin docs, reference]
+  related: [ansible-adhoc, ansible-galaxy-install]
+
+- id: ansible-config
+  tool: ansible
+  category: inventory
+  name: ansible-config
+  syntax: ansible-config dump [--only-changed] | list | view
+  summary: Show which configuration Ansible is actually using
+  description: Answers "which ansible.cfg won?" and lists every setting that differs from the defaults.
+  flags:
+    - {flag: "dump --only-changed", description: "Settings that differ from defaults, with their source"}
+    - {flag: "view", description: "Print the active configuration file"}
+    - {flag: "list", description: "All available settings with docs"}
+  examples:
+    - {cmd: "ansible-config dump --only-changed", description: "Debug unexpected behavior from env vars or cfg files"}
+    - {cmd: "ansible --version", description: "Shows the active config file, module paths and Python version"}
+  keywords: [configuration, ansible.cfg, settings, environment variables, defaults, debug config]
+  related: [ansible-inventory, ansible-playbook]
+
+- id: ansible-lint
+  tool: ansible
+  category: inventory
+  name: ansible-lint
+  syntax: ansible-lint [-p] [--fix] [-x RULES] [PATH...]
+  summary: Check playbooks and roles against best practices
+  description: Separate package (pip install ansible-lint). Catches deprecated syntax, unnamed tasks, risky shell usage and non-idempotent patterns.
+  flags:
+    - {flag: "-p", description: "Parseable one-line output for CI"}
+    - {flag: "--fix", description: "Auto-fix rules that support it"}
+    - {flag: "-x, --exclude-rules / -w", description: "Skip rules / downgrade them to warnings"}
+    - {flag: "--profile", description: "Strictness: min, basic, moderate, safety, shared, production"}
+    - {flag: "-L", description: "List all rules"}
+  examples:
+    - {cmd: "ansible-lint --profile production playbooks/ roles/", description: "Strict check before merging"}
+    - {cmd: "ansible-lint --fix site.yml", description: "Apply automatic fixes"}
+  keywords: [lint, best practices, static analysis, ci check, code quality, style, idempotency]
+  related: [ansible-playbook-validate, ansible-playbook]

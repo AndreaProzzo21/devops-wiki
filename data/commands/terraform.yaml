@@ -1,0 +1,370 @@
+# ======================= CORE WORKFLOW =======================
+- id: terraform-init
+  tool: terraform
+  category: workflow
+  name: terraform init
+  syntax: terraform init [-upgrade] [-reconfigure|-migrate-state] [-backend-config=KEY=VAL|FILE]
+  summary: Initialize the working directory, download providers and modules, configure the backend
+  description: The first command to run in any configuration, and again whenever providers, modules or the backend change. Safe and idempotent.
+  flags:
+    - {flag: "-upgrade", description: "Upgrade providers and modules to the newest versions allowed by constraints"}
+    - {flag: "-reconfigure", description: "Reconfigure the backend, ignoring any saved configuration"}
+    - {flag: "-migrate-state", description: "Move existing state to the new backend"}
+    - {flag: "-backend-config", description: "Partial backend settings from CLI or file (keep secrets out of code)"}
+    - {flag: "-backend=false", description: "Skip backend initialization (useful for validate-only CI jobs)"}
+    - {flag: "-input=false", description: "Never prompt, required in automation"}
+    - {flag: "-lockfile=readonly", description: "Do not modify .terraform.lock.hcl, fail if it would change"}
+    - {flag: "-from-module=SOURCE", description: "Bootstrap a directory from a module"}
+  examples:
+    - {cmd: "terraform init -input=false", description: "Non-interactive init for pipelines"}
+    - {cmd: "terraform init -backend-config=backend-prod.hcl -reconfigure", description: "Point at the production state backend"}
+    - {cmd: "terraform init -upgrade", description: "Refresh provider versions and update the lock file"}
+    - {cmd: "terraform init -migrate-state", description: "Move from local state to a remote backend"}
+  keywords: [initialize, download providers, backend, setup, modules, lock file, start project, remote state]
+  related: [terraform-validate, terraform-plan, terraform-providers, terraform-get]
+
+- id: terraform-validate
+  tool: terraform
+  category: workflow
+  name: terraform validate
+  syntax: terraform validate [-json]
+  summary: Check configuration syntax and internal consistency, no cloud calls
+  flags:
+    - {flag: "-json", description: "Machine-readable diagnostics for CI annotations"}
+    - {flag: "-no-color", description: "Plain output for logs"}
+  examples:
+    - {cmd: "terraform init -backend=false && terraform validate", description: "Fast offline validation in CI"}
+  keywords: [validate, syntax check, lint, verify configuration, check code, ci]
+  related: [terraform-fmt, terraform-init, terraform-plan]
+
+- id: terraform-fmt
+  tool: terraform
+  category: workflow
+  name: terraform fmt
+  syntax: terraform fmt [-recursive] [-check] [-diff] [PATH]
+  summary: Rewrite configuration files to the canonical style
+  flags:
+    - {flag: "-recursive", description: "Process subdirectories (modules)"}
+    - {flag: "-check", description: "Exit non-zero if any file needs formatting, writes nothing"}
+    - {flag: "-diff", description: "Show the formatting differences"}
+    - {flag: "-write=false", description: "Do not modify files"}
+  examples:
+    - {cmd: "terraform fmt -recursive", description: "Format the whole repository"}
+    - {cmd: "terraform fmt -check -recursive -diff", description: "CI check that prints what is wrong"}
+  keywords: [format code, style, indentation, canonical format, pre commit, tidy]
+  related: [terraform-validate, terraform-init]
+
+- id: terraform-plan
+  tool: terraform
+  category: workflow
+  name: terraform plan
+  syntax: terraform plan [-out=FILE] [-var 'k=v'] [-var-file=FILE] [-target=ADDR] [-replace=ADDR] [-refresh-only] [-destroy]
+  summary: Preview the changes Terraform would make to reach the desired state
+  description: Read the summary line "Plan N to add, N to change, N to destroy" and examine every destroy or replace ("-/+") carefully.
+  flags:
+    - {flag: "-out", description: "Save the plan to a file so apply executes exactly what you reviewed"}
+    - {flag: "-var, -var-file", description: "Set variables inline or from a file (repeatable)"}
+    - {flag: "-target", description: "Limit to one resource or module (escape hatch only, creates drift risk)"}
+    - {flag: "-replace", description: "Force re-creation of a resource (replaces the deprecated taint)"}
+    - {flag: "-refresh-only", description: "Only compare real infrastructure with state"}
+    - {flag: "-refresh=false", description: "Skip refreshing state, faster but may be stale"}
+    - {flag: "-destroy", description: "Plan the destruction of everything"}
+    - {flag: "-detailed-exitcode", description: "0 = no changes, 1 = error, 2 = changes present (for CI)"}
+    - {flag: "-lock=false", description: "Do not take the state lock (read-only checks only)"}
+    - {flag: "-parallelism=N", description: "Concurrent operations (default 10)"}
+    - {flag: "-compact-warnings", description: "Shorter warnings"}
+  examples:
+    - {cmd: "terraform plan -out=tfplan", description: "Save the plan for a reviewed apply"}
+    - {cmd: "terraform plan -var-file=prod.tfvars -out=tfplan -input=false", description: "Pipeline plan"}
+    - {cmd: "terraform plan -detailed-exitcode", description: "Drift detection job, exit code 2 means changes"}
+    - {cmd: "terraform plan -replace=aws_instance.web", description: "Preview re-creating one resource"}
+    - {cmd: "terraform plan -target=module.network", description: "Plan only one module"}
+    - {cmd: "terraform show -json tfplan | jq '.resource_changes[] | select(.change.actions[] == \"delete\") | .address'", description: "List everything the plan would delete"}
+  keywords: [preview, diff, dry run, what will change, speculative plan, changes, execution plan, review]
+  related: [terraform-apply, terraform-show, terraform-init, terraform-validate, terraform-refresh]
+
+- id: terraform-apply
+  tool: terraform
+  category: workflow
+  name: terraform apply
+  syntax: terraform apply [PLANFILE] [-auto-approve] [-var-file=FILE] [-target=ADDR] [-replace=ADDR]
+  summary: Create, update or delete infrastructure to match the configuration
+  description: Applying a saved plan file guarantees that what ran is exactly what was reviewed. Without a plan file Terraform plans again and asks for confirmation.
+  flags:
+    - {flag: "PLANFILE", description: "Apply a previously saved plan, no prompt needed"}
+    - {flag: "-auto-approve", description: "Skip interactive confirmation (pipelines only, always after a reviewed plan)"}
+    - {flag: "-parallelism", description: "Concurrent operations (default 10)"}
+    - {flag: "-lock-timeout=DURATION", description: "Wait for the state lock instead of failing (e.g. 5m)"}
+    - {flag: "-refresh-only", description: "Update state to match reality without changing infrastructure"}
+    - {flag: "-replace", description: "Re-create a specific resource"}
+    - {flag: "-target", description: "Apply only selected resources (use sparingly)"}
+    - {flag: "-input=false", description: "Never prompt for variables"}
+  examples:
+    - {cmd: "terraform apply tfplan", description: "Apply the exact reviewed plan"}
+    - {cmd: "terraform apply -auto-approve -lock-timeout=5m -input=false", description: "Unattended CI/CD apply"}
+    - {cmd: "terraform apply -replace=aws_instance.web", description: "Rebuild a broken instance"}
+    - {cmd: "terraform apply -refresh-only", description: "Accept real-world drift into the state"}
+  keywords: [create infrastructure, deploy, provisioning, apply changes, build infrastructure, execute plan, update infra]
+  related: [terraform-plan, terraform-destroy, terraform-output, terraform-force-unlock, terraform-state-list]
+  danger: caution
+
+- id: terraform-destroy
+  tool: terraform
+  category: workflow
+  name: terraform destroy
+  syntax: terraform destroy [-target=ADDR] [-auto-approve] [-var-file=FILE]
+  summary: Destroy all infrastructure managed by this configuration
+  description: Equivalent to apply -destroy. Always review with terraform plan -destroy first. Resources with prevent_destroy will block the run.
+  flags:
+    - {flag: "-target", description: "Destroy a single resource or module"}
+    - {flag: "-auto-approve", description: "No confirmation prompt (dangerous)"}
+    - {flag: "-refresh=false", description: "Skip refresh when cloud APIs are failing"}
+  examples:
+    - {cmd: "terraform plan -destroy -out=destroy.tfplan && terraform apply destroy.tfplan", description: "Review before destroying"}
+    - {cmd: "terraform destroy -target=aws_instance.test", description: "Remove one resource"}
+  keywords: [delete infrastructure, teardown, remove everything, cleanup, tear down environment, destroy stack]
+  related: [terraform-plan, terraform-apply, terraform-state-rm]
+  danger: destructive
+
+# ======================= INSPECT =======================
+- id: terraform-output
+  tool: terraform
+  category: inspect
+  name: terraform output
+  syntax: terraform output [-json] [-raw] [NAME]
+  summary: Print root module output values from the state
+  flags:
+    - {flag: "-json", description: "All outputs as JSON"}
+    - {flag: "-raw", description: "A single string output without quotes or newline, ideal for scripts"}
+  examples:
+    - {cmd: "terraform output -raw db_endpoint", description: "Use an output in a shell variable"}
+    - {cmd: "terraform output -json | jq 'map_values(.value)'", description: "Plain key/value map"}
+    - {cmd: "ssh ubuntu@$(terraform output -raw bastion_ip)", description: "Connect to something Terraform created"}
+  keywords: [outputs, show values, ip address, endpoint, export values, use in script, results]
+  related: [terraform-show, terraform-apply, terraform-state-show]
+
+- id: terraform-show
+  tool: terraform
+  category: inspect
+  name: terraform show
+  syntax: terraform show [-json] [PLANFILE]
+  summary: Display the current state or a saved plan in human or JSON form
+  examples:
+    - {cmd: "terraform show", description: "Readable state"}
+    - {cmd: "terraform show tfplan", description: "Inspect a saved plan"}
+    - {cmd: "terraform show -json tfplan > plan.json", description: "Feed the plan to policy tools (OPA, Checkov, Infracost)"}
+  keywords: [show state, inspect plan, json plan, policy check, view resources, review saved plan]
+  related: [terraform-plan, terraform-state-show, terraform-output]
+
+- id: terraform-providers
+  tool: terraform
+  category: inspect
+  name: terraform providers
+  syntax: terraform providers [lock -platform=OS_ARCH ...|mirror DIR|schema -json]
+  summary: Show provider requirements, or manage the dependency lock file
+  flags:
+    - {flag: "lock -platform", description: "Record hashes for several platforms (e.g. linux_amd64, darwin_arm64, windows_amd64)"}
+    - {flag: "mirror", description: "Download providers into a local directory for offline use"}
+    - {flag: "schema -json", description: "Dump provider schemas"}
+  examples:
+    - {cmd: "terraform providers", description: "Tree of required providers per module"}
+    - {cmd: "terraform providers lock -platform=linux_amd64 -platform=darwin_arm64", description: "Make the lock file work for CI and Apple Silicon"}
+  keywords: [providers, lock file, versions, dependencies, platform hashes, offline mirror]
+  related: [terraform-init, terraform-version]
+
+- id: terraform-graph
+  tool: terraform
+  category: inspect
+  name: terraform graph
+  syntax: terraform graph [-type=plan|apply] | dot -Tsvg > graph.svg
+  summary: Output the dependency graph in Graphviz DOT format
+  examples:
+    - {cmd: "terraform graph | dot -Tsvg > graph.svg", description: "Render the dependency graph (needs graphviz)"}
+  keywords: [dependency graph, visualize, diagram, resource dependencies, graphviz, architecture]
+  related: [terraform-plan, terraform-show]
+
+- id: terraform-console
+  tool: terraform
+  category: inspect
+  name: terraform console
+  syntax: terraform console [-var-file=FILE]
+  summary: Interactive prompt to evaluate expressions against your configuration and state
+  examples:
+    - {cmd: "echo 'cidrsubnet(\"10.0.0.0/16\", 8, 3)' | terraform console", description: "Test a function non-interactively"}
+    - {cmd: "terraform console", description: "Then try: length(var.subnets), aws_vpc.main.id, merge(...)"}
+  keywords: [repl, evaluate expression, test functions, debug interpolation, try expression, cidrsubnet]
+  related: [terraform-validate, terraform-output]
+
+- id: terraform-version
+  tool: terraform
+  category: inspect
+  name: terraform version
+  syntax: terraform version [-json]
+  summary: Show the Terraform CLI version and installed provider versions
+  keywords: [version, which version, provider versions, check cli]
+  related: [terraform-providers, terraform-init]
+
+# ======================= STATE =======================
+- id: terraform-state-list
+  tool: terraform
+  category: state
+  name: terraform state list
+  syntax: terraform state list [-id=ID] [ADDRESS...]
+  summary: List all resources tracked in the state
+  examples:
+    - {cmd: "terraform state list", description: "Every managed resource address"}
+    - {cmd: "terraform state list module.network", description: "Only resources in one module"}
+    - {cmd: "terraform state list | grep aws_instance", description: "Find resources of a type"}
+  keywords: [list state, managed resources, what is tracked, addresses, show resources, inventory]
+  related: [terraform-state-show, terraform-state-rm, terraform-state-mv, terraform-import]
+
+- id: terraform-state-show
+  tool: terraform
+  category: state
+  name: terraform state show
+  syntax: terraform state show ADDRESS
+  summary: Show all attributes of a single resource as recorded in the state
+  examples:
+    - {cmd: "terraform state show aws_instance.web", description: "IDs, IPs and every attribute"}
+    - {cmd: "terraform state show 'aws_subnet.private[\"eu-west-1a\"]'", description: "Addresses with for_each keys need quotes"}
+  keywords: [resource details, attributes, resource id, inspect resource, what does state say]
+  related: [terraform-state-list, terraform-show, terraform-output]
+
+- id: terraform-state-rm
+  tool: terraform
+  category: state
+  name: terraform state rm
+  syntax: terraform state rm [-dry-run] ADDRESS...
+  summary: Remove resources from the state without destroying them
+  description: The real resource stays alive but Terraform forgets it. Pair with an import elsewhere, or delete the block from the config afterward. Take a state backup first.
+  flags:
+    - {flag: "-dry-run", description: "Show what would be removed"}
+    - {flag: "-backup", description: "Where to write a state backup"}
+  examples:
+    - {cmd: "terraform state rm -dry-run aws_s3_bucket.legacy", description: "Preview"}
+    - {cmd: "terraform state rm module.old_vpc", description: "Stop managing a whole module"}
+  keywords: [forget resource, unmanage, remove from state, detach, orphan, stop tracking]
+  related: [terraform-state-list, terraform-import, terraform-state-mv, terraform-state-pull]
+  danger: caution
+
+- id: terraform-state-mv
+  tool: terraform
+  category: state
+  name: terraform state mv
+  syntax: terraform state mv [-dry-run] SOURCE DESTINATION
+  summary: Rename or move a resource within the state, or between states
+  description: Use it to refactor without recreating infrastructure. In Terraform 1.1+ a moved block in code is the safer, reviewable alternative.
+  examples:
+    - {cmd: "terraform state mv aws_instance.web aws_instance.app", description: "Rename a resource"}
+    - {cmd: "terraform state mv aws_instance.web module.compute.aws_instance.web", description: "Move into a module"}
+    - {cmd: "terraform state mv -state-out=other.tfstate aws_db_instance.main aws_db_instance.main", description: "Move to another state file"}
+  keywords: [rename resource, refactor, move to module, move state, avoid recreate, restructure]
+  related: [terraform-state-rm, terraform-state-list, terraform-import]
+  danger: caution
+
+- id: terraform-state-pull
+  tool: terraform
+  category: state
+  name: terraform state pull / push
+  syntax: terraform state pull > backup.tfstate | terraform state push FILE
+  summary: Download the raw remote state, or overwrite it from a file
+  description: pull is a harmless backup. push overwrites the remote state, use it only for disaster recovery with a known-good file.
+  examples:
+    - {cmd: "terraform state pull > backup-$(date +%F).tfstate", description: "Backup before any state surgery"}
+    - {cmd: "terraform state pull | jq '.serial, .lineage'", description: "Check serial and lineage"}
+  keywords: [backup state, download state, restore state, state file, raw state, recovery]
+  related: [terraform-state-rm, terraform-state-mv, terraform-force-unlock]
+  danger: caution
+
+- id: terraform-import
+  tool: terraform
+  category: state
+  name: terraform import
+  syntax: terraform import ADDRESS ID  |  import { to = ADDRESS  id = ID } block + terraform plan -generate-config-out=FILE
+  summary: Bring an existing, unmanaged resource under Terraform control
+  description: The import block (Terraform 1.5+) is preferred over the CLI command, it appears in the plan and can generate the configuration for you.
+  flags:
+    - {flag: "ADDRESS ID", description: "Resource address in code and the provider-specific real-world ID"}
+    - {flag: "-generate-config-out=FILE", description: "With import blocks, write a starter resource definition"}
+    - {flag: "-var-file", description: "Variables needed by the configuration"}
+  examples:
+    - {cmd: "terraform import aws_s3_bucket.assets my-assets-bucket", description: "Classic CLI import"}
+    - {cmd: "terraform plan -generate-config-out=generated.tf", description: "After adding an import block, generate HCL"}
+    - {cmd: "terraform import 'aws_subnet.private[\"a\"]' subnet-0abc123", description: "Import into a for_each instance"}
+  keywords: [import existing, adopt resource, bring under management, existing infrastructure, manual resources, brownfield]
+  related: [terraform-state-list, terraform-state-rm, terraform-plan]
+
+- id: terraform-refresh
+  tool: terraform
+  category: state
+  name: terraform apply -refresh-only
+  syntax: terraform apply -refresh-only [-auto-approve]
+  summary: Sync the state with real infrastructure without changing anything
+  description: Replaces the deprecated terraform refresh command. Shows drift and lets you accept it into state.
+  examples:
+    - {cmd: "terraform plan -refresh-only", description: "Detect drift only"}
+    - {cmd: "terraform apply -refresh-only", description: "Record the drift in the state after review"}
+  keywords: [refresh, drift, sync state, detect changes, out of band changes, manual changes, reconcile]
+  related: [terraform-plan, terraform-apply, terraform-state-show]
+
+- id: terraform-force-unlock
+  tool: terraform
+  category: state
+  name: terraform force-unlock
+  syntax: terraform force-unlock [-force] LOCK_ID
+  summary: Manually release a stuck state lock
+  description: Only when you are certain that no apply is running, for example after a crashed CI job. The lock ID is printed in the "Error acquiring the state lock" message.
+  examples:
+    - {cmd: "terraform force-unlock 6a2b9f1e-4c1d-0e8a-9f2b-1d3c5e7a9b01", description: "Release the lock using the ID from the error"}
+  keywords: [unlock, state lock, locked state, stuck lock, release lock, error acquiring lock, dynamodb lock]
+  related: [terraform-plan, terraform-apply, terraform-state-pull]
+  danger: destructive
+
+# ======================= WORKSPACES / UTILITIES =======================
+- id: terraform-workspace
+  tool: terraform
+  category: workspaces
+  name: terraform workspace
+  syntax: terraform workspace list | show | new NAME | select NAME | delete NAME
+  summary: Manage multiple named states for the same configuration
+  description: Workspaces share one codebase and backend but keep separate state. For strongly isolated environments many teams prefer separate directories or backends.
+  flags:
+    - {flag: "list / show", description: "All workspaces (current marked with *) / the current one"}
+    - {flag: "new / select", description: "Create / switch"}
+    - {flag: "delete", description: "Remove an empty workspace (-force if it has resources)"}
+  examples:
+    - {cmd: "terraform workspace new staging && terraform apply -var-file=staging.tfvars", description: "Create and deploy a new environment"}
+    - {cmd: "terraform workspace select prod", description: "Switch environments"}
+    - {cmd: "echo \"${terraform.workspace}\"", description: "In HCL use terraform.workspace to vary naming"}
+  keywords: [workspaces, environments, multiple states, staging prod, separate state, switch environment]
+  related: [terraform-init, terraform-plan, terraform-state-list]
+  danger: caution
+
+- id: terraform-get
+  tool: terraform
+  category: workspaces
+  name: terraform get
+  syntax: terraform get [-update]
+  summary: Download or update the modules referenced by the configuration
+  flags:
+    - {flag: "-update", description: "Re-fetch modules even if already present"}
+  examples:
+    - {cmd: "terraform get -update", description: "Refresh remote modules without a full init"}
+  keywords: [modules, download modules, update modules, fetch modules, registry]
+  related: [terraform-init]
+
+- id: terraform-test
+  tool: terraform
+  category: workspaces
+  name: terraform test
+  syntax: terraform test [-filter=FILE] [-verbose]
+  summary: Run native .tftest.hcl tests against your modules (Terraform 1.6+)
+  flags:
+    - {flag: "-filter", description: "Run only selected test files"}
+    - {flag: "-verbose", description: "Print plan and state for each run block"}
+    - {flag: "-json", description: "Structured output"}
+  examples:
+    - {cmd: "terraform test", description: "Run all tests in the module's tests/ directory"}
+    - {cmd: "terraform test -filter=tests/network.tftest.hcl -verbose", description: "One file, with details"}
+  keywords: [testing, unit tests, tftest, assertions, module tests, validate behavior, ci tests]
+  related: [terraform-validate, terraform-plan]
