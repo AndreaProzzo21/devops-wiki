@@ -1290,3 +1290,232 @@
     - {cmd: "watch -d 'df -h /'", description: "Watches root filesystem usage and highlights changes"}
   keywords: [watch command, live monitoring, refresh output, filesystem monitoring]
   related: [linux-ss, linux-df, linux-top]
+
+# ======================= ADDITIONAL RELATED COMMANDS =======================
+- id: linux-host
+  tool: linux
+  category: network
+  name: host
+  syntax: host [OPTIONS] NAME [SERVER]
+  summary: Performs simple DNS lookups for hostnames and addresses
+  flags:
+    - {flag: "-t TYPE", description: "Queries a specific DNS record type"}
+    - {flag: "-a", description: "Performs a comprehensive DNS query"}
+  examples:
+    - {cmd: "host example.com", description: "Resolves a hostname"}
+    - {cmd: "host -t MX example.com", description: "Queries mail exchange records"}
+  keywords: [dns, hostname, dns lookup, mx, records]
+  related: [linux-dig, linux-ping]
+
+- id: linux-parted
+  tool: linux
+  category: disk
+  name: parted
+  syntax: parted [OPTIONS] DEVICE [COMMAND]
+  summary: Creates and manages disk partition tables and partitions
+  flags:
+    - {flag: "-l", description: "Lists partition information for available devices"}
+    - {flag: "-s", description: "Runs in script mode without interactive prompts"}
+    - {flag: "mklabel", description: "Creates a partition table such as GPT"}
+    - {flag: "mkpart", description: "Creates a partition"}
+  examples:
+    - {cmd: "sudo parted -l", description: "Lists partition tables and partitions"}
+    - {cmd: "sudo parted /dev/sdb print", description: "Displays the partition layout of a disk"}
+  keywords: [partition, partition table, gpt, disk layout, storage]
+  related: [linux-fdisk, linux-lsblk]
+  danger: destructive
+
+- id: linux-updatedb
+  tool: linux
+  category: files
+  name: updatedb
+  syntax: updatedb [OPTIONS]
+  summary: Updates the file-name database used by locate
+  flags:
+    - {flag: "-U DIR", description: "Uses a specific directory as the database source"}
+    - {flag: "-o FILE", description: "Writes the database to a specific file"}
+  examples:
+    - {cmd: "sudo updatedb", description: "Refreshes the locate database"}
+  keywords: [locate database, filename database, file index, locate]
+  related: [linux-locate, linux-find]
+  danger: caution
+
+- id: linux-exec
+  tool: linux
+  category: shell
+  name: exec
+  syntax: exec COMMAND [ARG...]
+  summary: Replaces the current shell process with the specified command
+  flags: []
+  examples:
+    - {cmd: "exec ./app", description: "Replaces the current shell process with the application"}
+    - {cmd: "exec nginx -g 'daemon off;'", description: "Runs nginx as the current process, useful in containers"}
+  keywords: [shell exec, replace process, process replacement, container entrypoint]
+  related: [linux-xargs, linux-timeout]
+
+- id: linux-umask
+  tool: linux
+  category: files
+  name: umask
+  syntax: umask [-S] [MODE]
+  summary: Shows or changes the default permission mask for newly created files
+  flags:
+    - {flag: "-S", description: "Shows the mask in symbolic form"}
+    - {flag: "MODE", description: "Sets the permission mask"}
+  examples:
+    - {cmd: "umask", description: "Shows the current permission mask"}
+    - {cmd: "umask 027", description: "Sets a restrictive default permission mask"}
+  keywords: [file permissions, default permissions, permission mask, security]
+  related: [linux-chmod, linux-stat]
+
+- id: linux-readlink
+  tool: linux
+  category: files
+  name: readlink
+  syntax: readlink [-f] PATH
+  summary: Reads symbolic-link targets and can resolve paths to their canonical form
+  flags:
+    - {flag: "-f", description: "Resolves the path to its canonical absolute form"}
+    - {flag: "-e", description: "Resolves the path and requires all components to exist"}
+  examples:
+    - {cmd: "readlink -f /srv/app", description: "Shows the canonical target path"}
+    - {cmd: "readlink /etc/nginx/sites-enabled/app", description: "Shows the direct symbolic-link target"}
+  keywords: [symlink, symbolic link, resolve path, current release]
+  related: [linux-ln, linux-realpath]
+
+- id: linux-cp
+  tool: linux
+  category: files
+  name: cp
+  syntax: cp [-a|-r] SOURCE... DEST
+  summary: Copies files and directories
+  flags:
+    - {flag: "-a", description: "Archive mode; preserves attributes and copies recursively"}
+    - {flag: "-r", description: "Copies directories recursively"}
+    - {flag: "-i", description: "Prompts before overwriting"}
+    - {flag: "-n", description: "Does not overwrite existing files where supported"}
+  examples:
+    - {cmd: "cp -a /srv/app/current /srv/app/backup", description: "Copies an application tree while preserving attributes"}
+    - {cmd: "cp config.example.yml config.yml", description: "Copies a configuration template"}
+  keywords: [copy file, copy directory, backup, filesystem]
+  related: [linux-ln, linux-rsync]
+
+- id: linux-w
+  tool: linux
+  category: system
+  name: w
+  syntax: w [USER]
+  summary: Shows logged-in users and their current activity
+  flags: []
+  examples:
+    - {cmd: "w", description: "Shows logged-in users, idle time, and current processes"}
+  keywords: [logged users, sessions, users, uptime, activity]
+  related: [linux-uptime, linux-whoami]
+
+- id: linux-lsb_release
+  tool: linux
+  category: system
+  name: lsb_release
+  syntax: lsb_release [-a|-d|-r]
+  summary: Displays Linux distribution identification information when available
+  flags:
+    - {flag: "-a", description: "Shows all available distribution information"}
+    - {flag: "-d", description: "Shows the distribution description"}
+    - {flag: "-r", description: "Shows the distribution release"}
+  examples:
+    - {cmd: "lsb_release -a", description: "Shows distribution name and release information"}
+    - {cmd: "lsb_release -ds", description: "Shows a concise distribution description"}
+  keywords: [linux distribution, distro version, os version, release]
+  related: [linux-uname, linux-hostnamectl]
+
+- id: linux-hostname
+  tool: linux
+  category: system
+  name: hostname
+  syntax: hostname [NAME]
+  summary: Shows or changes the system hostname
+  flags:
+    - {flag: "-f", description: "Shows the fully qualified domain name where available"}
+    - {flag: "-I", description: "Shows the configured IP addresses"}
+  examples:
+    - {cmd: "hostname", description: "Shows the current hostname"}
+    - {cmd: "hostname -I", description: "Shows the host IP addresses"}
+  keywords: [hostname, server name, host identity, ip address]
+  related: [linux-hostnamectl, linux-uname]
+
+- id: linux-gunzip
+  tool: linux
+  category: archive
+  name: gunzip
+  syntax: gunzip [-k] FILE.gz...
+  summary: Decompresses gzip-compressed files
+  flags:
+    - {flag: "-k", description: "Keeps the compressed input file"}
+    - {flag: "-c", description: "Writes decompressed data to standard output"}
+  examples:
+    - {cmd: "gunzip app.log.gz", description: "Decompresses a gzip-compressed log"}
+    - {cmd: "gunzip -c app.log.gz | head", description: "Reads compressed log content without creating the output file"}
+  keywords: [gunzip, gzip, decompress, compressed log]
+  related: [linux-gzip, linux-zgrep]
+
+- id: linux-su
+  tool: linux
+  category: users
+  name: su
+  syntax: su [-] [USER [COMMAND]]
+  summary: Switches to another user account and optionally runs a command
+  flags:
+    - {flag: "-", description: "Starts a login shell with the target user's environment"}
+    - {flag: "-c", description: "Runs a single command as the target user"}
+  examples:
+    - {cmd: "su - deploy", description: "Opens a login shell as deploy"}
+    - {cmd: "su -c 'id' deploy", description: "Runs a command as deploy"}
+  keywords: [switch user, login shell, user identity, privilege]
+  related: [linux-sudo, linux-whoami]
+  danger: caution
+
+- id: linux-ls
+  tool: linux
+  category: files
+  name: ls
+  syntax: ls [-lah] [PATH]
+  summary: Lists files and directories
+  flags:
+    - {flag: "-l", description: "Long listing format"}
+    - {flag: "-a", description: "Includes hidden files"}
+    - {flag: "-h", description: "Human-readable sizes with long format"}
+    - {flag: "-t", description: "Sorts by modification time"}
+  examples:
+    - {cmd: "ls -lah /var/log", description: "Lists log files with details and human-readable sizes"}
+    - {cmd: "ls -lt /tmp", description: "Lists files newest first"}
+  keywords: [list files, directory listing, file permissions, filesystem]
+  related: [linux-stat, linux-find]
+
+- id: linux-pidof
+  tool: linux
+  category: processes
+  name: pidof
+  syntax: pidof PROGRAM...
+  summary: Finds process IDs for running programs by name
+  flags:
+    - {flag: "-x", description: "Includes scripts when supported"}
+    - {flag: "-s", description: "Returns only one PID"}
+  examples:
+    - {cmd: "pidof nginx", description: "Shows the PIDs of nginx processes"}
+    - {cmd: "pidof sshd", description: "Shows the PIDs of sshd processes"}
+  keywords: [pid, process id, find process, running process]
+  related: [linux-pgrep, linux-ps]
+
+- id: linux-realpath
+  tool: linux
+  category: files
+  name: realpath
+  syntax: realpath [OPTIONS] PATH...
+  summary: Resolves paths to canonical absolute paths
+  flags:
+    - {flag: "-e", description: "Requires all path components to exist"}
+    - {flag: "-m", description: "Allows missing path components"}
+  examples:
+    - {cmd: "realpath /srv/app/current", description: "Resolves a release symlink to its canonical path"}
+  keywords: [canonical path, resolve path, symlink, filesystem]
+  related: [linux-readlink, linux-ln]
