@@ -4,886 +4,294 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DevOps Command Wiki</title>
-
 <style>
 :root{
-  --bg:#0d1117;
-  --panel:#161b22;
-  --panel-hover:#1c2128;
-  --line:#262d36;
-  --txt:#e6edf3;
-  --mut:#8b949e;
-  --acc:#326ce5;
-  --acc-hover:#4b7ff0;
-  --warn:#f5a524;
-  --bad:#f85149;
-  --code:#010409;
-
+  --bg:#0d1117;--panel:#161b22;--panel-hover:#1c2128;--line:#262d36;--txt:#e6edf3;--mut:#8b949e;
+  --acc:#326ce5;--acc-hover:#4b7ff0;--warn:#f5a524;--bad:#f85149;--code:#010409;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
-
 :root.light{
-  --bg:#f7f3ea;
-  --panel:#fffdf8;
-  --panel-hover:#f1ece2;
-  --line:#ded8cc;
-  --txt:#252a31;
-  --mut:#737981;
-  --acc:#326ce5;
-  --acc-hover:#2459c7;
-  --warn:#a96900;
-  --bad:#d93636;
-  --code:#f0ece4;
+  --bg:#f7f3ea;--panel:#fffdf8;--panel-hover:#f1ece2;--line:#ded8cc;--txt:#252a31;--mut:#737981;
+  --acc:#326ce5;--acc-hover:#2459c7;--warn:#a96900;--bad:#d93636;--code:#f0ece4;
 }
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--txt);font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;
+  display:flex;flex-direction:column;transition:background .2s ease,color .2s ease}
 
-*{
-  box-sizing:border-box
-}
+header{display:flex;gap:16px;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line);
+  background:var(--panel);transition:background .2s ease,border-color .2s ease}
+.logo{font-weight:700;letter-spacing:.3px;white-space:nowrap}
+.logo span{color:var(--acc)}
+#q{flex:1;max-width:640px;background:var(--bg);border:1px solid var(--line);color:var(--txt);padding:9px 12px;
+  border-radius:8px;font-size:14px;outline:none;transition:background .2s ease,border-color .2s ease,color .2s ease}
+#q:focus{border-color:var(--acc)}
+#q::placeholder{color:var(--mut)}
+#themeToggle{width:36px;height:36px;flex:none;display:flex;align-items:center;justify-content:center;
+  background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--txt);cursor:pointer;font-size:16px;
+  transition:background .2s ease,border-color .2s ease,color .2s ease,transform .15s ease}
+#themeToggle:hover{border-color:var(--acc);color:var(--acc)}
+#themeToggle:active{transform:scale(.94)}
 
-html,body{
-  height:100%;
-  margin:0
-}
+/* FIX scroll: righe della griglia esplicite, altrimenti la riga "auto" cresce col contenuto
+   e le colonne non scorrono in modo indipendente. minmax(0,...) impedisce l'overflow orizzontale. */
+main{flex:1;min-height:0;display:grid;
+  grid-template-columns:230px 340px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
+aside,section{overflow:auto;min-height:0}
+aside{border-right:1px solid var(--line);padding:12px 8px}
+#list{border-right:1px solid var(--line);padding:10px}
+#detail{padding:24px 32px}
 
-body{
-  background:var(--bg);
-  color:var(--txt);
-  font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;
-  display:flex;
-  flex-direction:column;
-  transition:
-    background .2s ease,
-    color .2s ease;
-}
+/* Paginazione sempre visibile in fondo alla lista, senza dover scorrere */
+.pagination{position:sticky;bottom:-10px;margin:8px -10px -10px;padding:10px;background:var(--bg);
+  border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.pagination-info{color:var(--mut);font-size:12px;text-align:center}
+.pagination-buttons{display:flex;justify-content:center;align-items:center;gap:4px}
+.page-btn{min-width:30px;height:30px;padding:0 8px;border:1px solid var(--line);border-radius:6px;background:var(--panel);
+  color:var(--txt);cursor:pointer;font-size:12px;transition:background .15s ease,border-color .15s ease,color .15s ease}
+.page-btn:hover:not(:disabled){border-color:var(--acc);color:var(--acc)}
+.page-btn.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.page-btn:disabled{opacity:.4;cursor:default}
+.page-dots{color:var(--mut);padding:0 3px}
 
-header{
-  display:flex;
-  gap:16px;
-  align-items:center;
-  padding:12px 20px;
-  border-bottom:1px solid var(--line);
-  background:var(--panel);
-  transition:
-    background .2s ease,
-    border-color .2s ease;
-}
+.nav{display:flex;justify-content:space-between;width:100%;background:none;border:0;color:var(--txt);padding:7px 10px;
+  border-radius:6px;cursor:pointer;font-size:14px;text-align:left;transition:background .15s ease,color .15s ease}
+.nav:hover{background:var(--panel-hover)}
+.nav.on{background:var(--panel-hover);color:var(--acc)}
+.nav small{color:var(--mut)}
+.cat{padding-left:22px;color:var(--mut);font-size:13px}
 
-.logo{
-  font-weight:700;
-  letter-spacing:.3px;
-  white-space:nowrap;
-}
+.card{padding:10px 12px;border:1px solid transparent;border-radius:8px;cursor:pointer;
+  transition:background .15s ease,border-color .15s ease}
+.card:hover{background:var(--panel-hover)}
+.card.on{background:var(--panel-hover);border-color:var(--acc)}
+.card b{font-family:var(--mono);font-size:13px}
+.card p{margin:2px 0 0;color:var(--mut);font-size:13px}
+.tag{font-size:11px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--mut);margin-left:6px;vertical-align:middle}
+.tag.caution{color:var(--warn);border-color:var(--warn)}
+.tag.destructive{color:var(--bad);border-color:var(--bad)}
 
-.logo span{
-  color:var(--acc)
-}
+h1{margin:0 0 4px;font-size:24px;font-family:var(--mono)}
+h2{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:28px 0 8px}
+.sub{color:var(--mut);margin:0 0 16px}
+.code{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--code);border:1px solid var(--line);
+  border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:13px;margin:6px 0;transition:background .2s ease,border-color .2s ease}
+.code code{white-space:pre-wrap;word-break:break-all;color:var(--acc)}
+.cp{background:var(--panel);color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:3px 10px;cursor:pointer;
+  font-size:12px;flex:none;transition:background .15s ease,color .15s ease,border-color .15s ease}
+.cp:hover{color:var(--txt);border-color:var(--acc)}
+.ex p{margin:0 0 0 2px;color:var(--mut);font-size:13px}
+table{width:100%;border-collapse:collapse}
+td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+td:first-child{font-family:var(--mono);color:var(--warn);white-space:nowrap;width:1%}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px;cursor:pointer;
+  font-family:var(--mono);font-size:13px;transition:background .15s ease,border-color .15s ease}
+.chip:hover{border-color:var(--acc);background:var(--panel-hover)}
+.alert{border:1px solid var(--bad);background:#f8514914;color:var(--bad);padding:8px 12px;border-radius:8px;margin:12px 0}
+.empty{color:var(--mut);padding:40px 10px;text-align:center}
 
-#q{
-  flex:1;
-  max-width:640px;
-  background:var(--bg);
-  border:1px solid var(--line);
-  color:var(--txt);
-  padding:9px 12px;
-  border-radius:8px;
-  font-size:14px;
-  outline:none;
-  transition:
-    background .2s ease,
-    border-color .2s ease,
-    color .2s ease;
-}
-
-#q:focus{
-  border-color:var(--acc)
-}
-
-#q::placeholder{
-  color:var(--mut)
-}
-
-kbd{
-  font:12px var(--mono);
-  border:1px solid var(--line);
-  border-radius:4px;
-  padding:1px 6px;
-  color:var(--mut);
-  flex:none;
-}
-
-/* Theme toggle */
-
-#themeToggle{
-  width:36px;
-  height:36px;
-  flex:none;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:var(--bg);
-  border:1px solid var(--line);
-  border-radius:8px;
-  color:var(--txt);
-  cursor:pointer;
-  font-size:16px;
-  transition:
-    background .2s ease,
-    border-color .2s ease,
-    color .2s ease,
-    transform .15s ease;
-}
-
-#themeToggle:hover{
-  border-color:var(--acc);
-  color:var(--acc);
-}
-
-#themeToggle:active{
-  transform:scale(.94);
-}
-
-main{
-  flex:1;
-  display:grid;
-  grid-template-columns:230px 340px 1fr;
-  min-height:0
-}
-
-aside,section{
-  overflow:auto;
-  min-height:0
-}
-
-aside{
-  border-right:1px solid var(--line);
-  padding:12px 8px
-}
-
-#list{
-  border-right:1px solid var(--line);
-  padding:10px
-}
-
-#detail{
-  padding:24px 32px
-}
-
-.nav{
-  display:flex;
-  justify-content:space-between;
-  width:100%;
-  background:none;
-  border:0;
-  color:var(--txt);
-  padding:7px 10px;
-  border-radius:6px;
-  cursor:pointer;
-  font-size:14px;
-  text-align:left;
-  transition:
-    background .15s ease,
-    color .15s ease;
-}
-
-.nav:hover{
-  background:var(--panel-hover)
-}
-
-.nav.on{
-  background:var(--panel-hover);
-  color:var(--acc)
-}
-
-.nav small{
-  color:var(--mut)
-}
-
-.cat{
-  padding-left:22px;
-  color:var(--mut);
-  font-size:13px
-}
-
-.card{
-  padding:10px 12px;
-  border:1px solid transparent;
-  border-radius:8px;
-  cursor:pointer;
-  transition:
-    background .15s ease,
-    border-color .15s ease;
-}
-
-.card:hover{
-  background:var(--panel-hover)
-}
-
-.card.on{
-  background:var(--panel-hover);
-  border-color:var(--acc)
-}
-
-.card b{
-  font-family:var(--mono);
-  font-size:13px
-}
-
-.card p{
-  margin:2px 0 0;
-  color:var(--mut);
-  font-size:13px
-}
-
-.tag{
-  font-size:11px;
-  padding:1px 7px;
-  border-radius:99px;
-  border:1px solid var(--line);
-  color:var(--mut);
-  margin-left:6px;
-  vertical-align:middle
-}
-
-.tag.caution{
-  color:var(--warn);
-  border-color:var(--warn)
-}
-
-.tag.destructive{
-  color:var(--bad);
-  border-color:var(--bad)
-}
-
-h1{
-  margin:0 0 4px;
-  font-size:24px;
-  font-family:var(--mono)
-}
-
-h2{
-  font-size:12px;
-  text-transform:uppercase;
-  letter-spacing:1px;
-  color:var(--mut);
-  margin:28px 0 8px
-}
-
-.sub{
-  color:var(--mut);
-  margin:0 0 16px
-}
-
-.code{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  gap:12px;
-  background:var(--code);
-  border:1px solid var(--line);
-  border-radius:8px;
-  padding:10px 14px;
-  font-family:var(--mono);
-  font-size:13px;
-  margin:6px 0;
-  transition:
-    background .2s ease,
-    border-color .2s ease;
-}
-
-.code code{
-  white-space:pre-wrap;
-  word-break:break-all;
-  color:var(--acc)
-}
-
-.cp{
-  background:var(--panel);
-  color:var(--mut);
-  border:1px solid var(--line);
-  border-radius:6px;
-  padding:3px 10px;
-  cursor:pointer;
-  font-size:12px;
-  flex:none;
-  transition:
-    background .15s ease,
-    color .15s ease,
-    border-color .15s ease;
-}
-
-.cp:hover{
-  color:var(--txt);
-  border-color:var(--acc);
-}
-
-.ex p{
-  margin:0 0 0 2px;
-  color:var(--mut);
-  font-size:13px
-}
-
-table{
-  width:100%;
-  border-collapse:collapse
-}
-
-td{
-  padding:8px 10px;
-  border-bottom:1px solid var(--line);
-  vertical-align:top
-}
-
-td:first-child{
-  font-family:var(--mono);
-  color:var(--warn);
-  white-space:nowrap;
-  width:1%
-}
-
-.chips{
-  display:flex;
-  flex-wrap:wrap;
-  gap:8px
-}
-
-.chip{
-  background:var(--panel);
-  border:1px solid var(--line);
-  border-radius:8px;
-  padding:6px 12px;
-  cursor:pointer;
-  font-family:var(--mono);
-  font-size:13px;
-  transition:
-    background .15s ease,
-    border-color .15s ease;
-}
-
-.chip:hover{
-  border-color:var(--acc);
-  background:var(--panel-hover);
-}
-
-.alert{
-  border:1px solid var(--bad);
-  background:#f8514914;
-  color:var(--bad);
-  padding:8px 12px;
-  border-radius:8px;
-  margin:12px 0
-}
-
-.empty{
-  color:var(--mut);
-  padding:40px 10px;
-  text-align:center
-}
-
+/* Tablet/mobile: la nav diventa una barra orizzontale scorrevole (prima era display:none, quindi inutilizzabile) */
 @media(max-width:900px){
-  main{
-    grid-template-columns:1fr
-  }
-
-  aside{
-    display:none
-  }
-
-  #list{
-    max-height:40vh;
-    border-right:0;
-    border-bottom:1px solid var(--line)
-  }
-
-  #detail{
-    padding:16px
-  }
+  main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr)}
+  aside{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;border-right:0;border-bottom:1px solid var(--line);padding:8px 10px}
+  .nav{width:auto;flex:none;white-space:nowrap;gap:8px;border:1px solid var(--line)}
+  .cat{padding-left:10px}
+  #list{max-height:40vh;border-right:0;border-bottom:1px solid var(--line)}
+  #detail{padding:16px}
 }
-
 @media(max-width:600px){
-  header{
-    gap:10px;
-    padding:10px 12px;
-  }
-
-  .logo{
-    font-size:13px;
-  }
-
-  #q{
-    min-width:0;
-  }
-
-  kbd{
-    display:none;
-  }
-
-  #themeToggle{
-    width:34px;
-    height:34px;
-  }
+  header{gap:10px;padding:10px 12px}
+  .logo{font-size:13px}
+  #q{min-width:0}
+  #themeToggle{width:34px;height:34px}
 }
 </style>
 </head>
-
 <body>
 
 <header>
   <div class="logo">DevOps<span>Wiki</span></div>
-
-  <input
-    id="q"
-    placeholder="Search for a command, a flag or an issue…  (e.g. rollback, pod log, --atomic)"
-    autocomplete="off"
-  >
-
-  <button
-    id="themeToggle"
-    type="button"
-    aria-label="Switch theme"
-    title="Switch theme"
-  >☀</button>
+  <input id="q" placeholder="Search for a command, a flag or an issue…  (e.g. rollback, pod log, --atomic)" autocomplete="off">
+  <button id="themeToggle" type="button" aria-label="Switch theme" title="Switch theme">☀</button>
 </header>
 
 <main>
   <aside id="nav"></aside>
-
   <section id="list"></section>
-
-  <section id="detail">
-    <div class="empty">Select a command to view its details.</div>
-  </section>
+  <section id="detail"><div class="empty">Select a command to view its details.</div></section>
 </main>
 
 <script>
 const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-const esc=s=>String(s??'').replace(
-  /[&<>"]/g,
-  c=>({
-    '&':'&amp;',
-    '<':'&lt;',
-    '>':'&gt;',
-    '"':'&quot;'
-  }[c])
-);
+const PAGE_SIZE=20, SEARCH_LIMIT=50;
+let tools=[], sel={tool:null,cat:null}, cur=null, page=1, timer, reqId=0;
 
-let tools=[],
-    sel={tool:null,cat:null},
-    cur=null,
-    timer;
-
-
-/* -------------------------------------------------------
-   Theme
-------------------------------------------------------- */
-
+/* ---------------- Theme ---------------- */
 function setTheme(theme){
   const light=theme==='light';
-
   document.documentElement.classList.toggle('light',light);
-
-  $('#themeToggle').textContent=light?'☾':'☀';
-
-  $('#themeToggle').setAttribute(
-    'aria-label',
-    light?'Switch to dark mode':'Switch to light mode'
-  );
-
-  $('#themeToggle').setAttribute(
-    'title',
-    light?'Switch to dark mode':'Switch to light mode'
-  );
-
-  localStorage.setItem('devopswiki-theme',theme);
+  const b=$('#themeToggle');
+  b.textContent=light?'☾':'☀';
+  b.setAttribute('aria-label',light?'Switch to dark mode':'Switch to light mode');
+  b.setAttribute('title',light?'Switch to dark mode':'Switch to light mode');
+  try{localStorage.setItem('devopswiki-theme',theme)}catch{}
 }
-
 function initTheme(){
-  const saved=localStorage.getItem('devopswiki-theme');
-
-  if(saved==='light'||saved==='dark'){
-    setTheme(saved);
-    return;
-  }
-
-  /*
-   * Dark mode remains the default, but if the user has
-   * never selected a theme we respect the operating system.
-   */
-  const prefersLight=window.matchMedia &&
-    window.matchMedia('(prefers-color-scheme: light)').matches;
-
-  setTheme(prefersLight?'light':'dark');
+  let saved=null; try{saved=localStorage.getItem('devopswiki-theme')}catch{}
+  if(saved==='light'||saved==='dark'){setTheme(saved);return}
+  setTheme(window.matchMedia&&matchMedia('(prefers-color-scheme: light)').matches?'light':'dark');
 }
 
-$('#themeToggle').addEventListener('click',()=>{
-  const isLight=document.documentElement.classList.contains('light');
-  setTheme(isLight?'dark':'light');
-});
-
-
-/* -------------------------------------------------------
-   API
-------------------------------------------------------- */
-
-async function api(u){
+/* ---------------- API ---------------- */
+async function get(u){
   const r=await fetch(u);
-
-  if(r.status===429){
-    throw new Error(
-      'Too many requests, please try again in a few seconds.'
-    );
-  }
-
-  if(!r.ok){
-    throw new Error('Error '+r.status);
-  }
-
+  if(r.status===429)throw new Error('Too many requests, please try again in a few seconds.');
+  if(!r.ok)throw new Error('Error '+r.status);
   return r.json();
 }
 
-
-/* -------------------------------------------------------
-   Navigation
-------------------------------------------------------- */
-
+/* ---------------- Nav ---------------- */
 function renderNav(){
   $('#nav').innerHTML=
-    `<button class="nav ${!sel.tool?'on':''}" data-t="">
-      All commands
-    </button>`+
-
+    `<button class="nav ${!sel.tool?'on':''}" data-t="">All commands</button>`+
     tools.map(t=>
-      `<button
-        class="nav ${sel.tool===t.tool&&!sel.cat?'on':''}"
-        data-t="${esc(t.tool)}"
-      >
-        <span>${esc(t.tool)}</span>
-        <small>${t.count}</small>
-      </button>`+
-
-      (
-        sel.tool===t.tool
-        ?
-        Object.entries(t.categories).map(([c,n])=>
-          `<button
-            class="nav cat ${sel.cat===c?'on':''}"
-            data-t="${esc(t.tool)}"
-            data-c="${esc(c)}"
-          >
-            <span>${esc(c)}</span>
-            <small>${n}</small>
-          </button>`
-        ).join('')
-        :
-        ''
-      )
+      `<button class="nav ${sel.tool===t.tool&&!sel.cat?'on':''}" data-t="${esc(t.tool)}">
+         <span>${esc(t.tool)}</span><small>${t.count}</small></button>`+
+      (sel.tool===t.tool?Object.entries(t.categories).map(([c,n])=>
+        `<button class="nav cat ${sel.cat===c?'on':''}" data-t="${esc(t.tool)}" data-c="${esc(c)}">
+           <span>${esc(c)}</span><small>${n}</small></button>`).join(''):'')
     ).join('');
 }
 
-
-/* -------------------------------------------------------
-   Command list
-------------------------------------------------------- */
-
-function renderList(items,msg){
-  $('#list').innerHTML=items.length
-    ?
-    items.map(c=>
-      `<div
-        class="card ${cur===c.id?'on':''}"
-        data-id="${esc(c.id)}"
-      >
-        <b>${esc(c.name)}</b>${
-          c.danger!=='none'
-            ?
-            `<span class="tag ${c.danger}">
-              ${c.danger==='destructive'?'destructive':'warning'}
-            </span>`
-            :
-            ''
-        }
-
-        <span class="tag">${esc(c.tool)}</span>
-
-        <p>${esc(c.summary)}</p>
-      </div>`
-    ).join('')
-
-    :
-
-    `<div class="empty">
-      ${msg||'No results found.'}
-    </div>`;
+/* ---------------- List + pagination ---------------- */
+function paginationHtml(d){
+  if(d.pages<=1)return `<div class="pagination"><div class="pagination-info">${d.total} command${d.total===1?'':'s'}</div></div>`;
+  const start=(d.page-1)*d.limit+1, end=Math.min(d.page*d.limit,d.total), max=5;
+  let b=Math.min(d.pages,Math.max(1,d.page-2)+max-1), a=Math.max(1,b-max+1);
+  const btn=(p,label,o={})=>`<button class="page-btn${o.on?' on':''}" data-page="${p}"${o.off?' disabled':''}>${label}</button>`;
+  let h=`<div class="pagination"><div class="pagination-info">Showing ${start}–${end} of ${d.total}</div><div class="pagination-buttons">`;
+  h+=btn(d.page-1,'←',{off:d.page===1});
+  if(a>1){h+=btn(1,'1');if(a>2)h+='<span class="page-dots">…</span>'}
+  for(let i=a;i<=b;i++)h+=btn(i,i,{on:i===d.page});
+  if(b<d.pages){if(b<d.pages-1)h+='<span class="page-dots">…</span>';h+=btn(d.pages,d.pages)}
+  h+=btn(d.page+1,'→',{off:d.page===d.pages});
+  return h+'</div></div>';
 }
 
+function renderList(items,footer,emptyMsg){
+  $('#list').innerHTML=(items.length?items.map(c=>
+    `<div class="card ${cur===c.id?'on':''}" data-id="${esc(c.id)}">
+       <b>${esc(c.name)}</b>${c.danger!=='none'?`<span class="tag ${c.danger}">${c.danger==='destructive'?'destructive':'warning'}</span>`:''}
+       <span class="tag">${esc(c.tool)}</span>
+       <p>${esc(c.summary)}</p></div>`).join('')
+    :`<div class="empty">${emptyMsg||'No results found.'}</div>`)+(footer||'');
+}
 
-/* -------------------------------------------------------
-   Refresh
-------------------------------------------------------- */
-
-async function refresh(){
-  const q=$('#q').value.trim();
-  const p=new URLSearchParams();
-
+async function refresh(toTop){
+  const id=++reqId;                       // scarta risposte vecchie (richieste fuori ordine)
+  const q=$('#q').value.trim(), p=new URLSearchParams();
   if(sel.tool)p.set('tool',sel.tool);
   if(sel.cat)p.set('category',sel.cat);
-
   try{
-
     if(q){
-      p.set('q',q);
-
-      renderList(
-        await api('/api/search?'+p),
-        'No results found for “'+esc(q)+'”.'
-      );
-
+      p.set('q',q);p.set('limit',SEARCH_LIMIT);
+      const items=await get('/api/search?'+p);
+      if(id!==reqId)return;
+      renderList(items,`<div class="pagination"><div class="pagination-info">${items.length} result${items.length===1?'':'s'}${items.length===SEARCH_LIMIT?' (top '+SEARCH_LIMIT+')':''}</div></div>`,
+        'No results found for “'+esc(q)+'”.');
     }else{
-
-      renderList(
-        await api('/api/commands?'+p)
-      );
-
+      p.set('page',page);p.set('limit',PAGE_SIZE);
+      const d=await get('/api/commands?'+p);
+      if(id!==reqId)return;
+      page=d.page;                         // il server fa il clamp della pagina
+      renderList(d.items,paginationHtml(d));
     }
-
+    if(toTop)$('#list').scrollTop=0;      // dopo il render, non prima
   }catch(e){
-
-    $('#list').innerHTML=
-      `<div class="empty">${esc(e.message)}</div>`;
-
+    if(id===reqId)$('#list').innerHTML=`<div class="empty">${esc(e.message)}</div>`;
   }
 }
 
-
-/* -------------------------------------------------------
-   Command detail
-------------------------------------------------------- */
-
+/* ---------------- Detail ---------------- */
 async function show(id){
-
-  cur=id;
-  location.hash=id;
-
+  cur=id;location.hash=id;
   try{
-
-    const c=await api(
-      '/api/commands/'+encodeURIComponent(id)
-    );
-
-    const code=t=>
-      `<div class="code">
-        <code>${esc(t)}</code>
-        <button
-          class="cp"
-          data-copy="${esc(t)}"
-        >Copy</button>
-      </div>`;
-
+    const c=await get('/api/commands/'+encodeURIComponent(id));
+    const code=t=>`<div class="code"><code>${esc(t)}</code><button class="cp" data-copy="${esc(t)}">Copy</button></div>`;
     $('#detail').innerHTML=
       `<h1>${esc(c.name)}</h1>
-
-       <p class="sub">
-         <span class="tag">${esc(c.tool)}</span>
-         <span class="tag">${esc(c.category)}</span>
-
-         ${
-           c.danger!=='none'
-             ?
-             `<span class="tag ${c.danger}">
-               ${c.danger}
-             </span>`
-             :
-             ''
-         }
-       </p>
-
+       <p class="sub"><span class="tag">${esc(c.tool)}</span><span class="tag">${esc(c.category)}</span>${c.danger!=='none'?`<span class="tag ${c.danger}">${c.danger}</span>`:''}</p>
        <p>${esc(c.summary)}</p>
-
-       ${
-         c.description
-           ?
-           `<p class="sub">
-             ${esc(c.description)}
-           </p>`
-           :
-           ''
-       }
-
-       ${
-         c.danger==='destructive'
-           ?
-           `<div class="alert">
-             Destructive command: verify context and namespace/environment before executing.
-           </div>`
-           :
-           ''
-       }
-
-       <h2>Syntax</h2>
-       ${code(c.syntax)}
-
-       ${
-         c.flags.length
-           ?
-           `<h2>Flags</h2>
-            <table>
-              ${
-                c.flags.map(f=>
-                  `<tr>
-                    <td>${esc(f.flag)}</td>
-                    <td>${esc(f.description)}</td>
-                  </tr>`
-                ).join('')
-              }
-            </table>`
-           :
-           ''
-       }
-
-       ${
-         c.examples.length
-           ?
-           `<h2>Examples</h2>
-            ${
-              c.examples.map(e=>
-                `<div class="ex">
-                  ${code(e.cmd)}
-                  <p>${esc(e.description)}</p>
-                </div>`
-              ).join('')
-            }`
-           :
-           ''
-       }
-
-       ${
-         c.related_commands.length
-           ?
-           `<h2>Related commands</h2>
-            <div class="chips">
-              ${
-                c.related_commands.map(r=>
-                  `<span
-                    class="chip"
-                    data-id="${esc(r.id)}"
-                  >${esc(r.name)}</span>`
-                ).join('')
-              }
-            </div>`
-           :
-           ''
-       }`;
-
-    document
-      .querySelectorAll('.card')
-      .forEach(e=>
-        e.classList.toggle(
-          'on',
-          e.dataset.id===id
-        )
-      );
-
+       ${c.description?`<p class="sub">${esc(c.description)}</p>`:''}
+       ${c.danger==='destructive'?'<div class="alert">Destructive command: verify context and namespace/environment before executing.</div>':''}
+       <h2>Syntax</h2>${code(c.syntax)}
+       ${c.flags.length?`<h2>Flags</h2><table>${c.flags.map(f=>`<tr><td>${esc(f.flag)}</td><td>${esc(f.description)}</td></tr>`).join('')}</table>`:''}
+       ${c.examples.length?`<h2>Examples</h2>${c.examples.map(e=>`<div class="ex">${code(e.cmd)}<p>${esc(e.description)}</p></div>`).join('')}`:''}
+       ${c.related_commands.length?`<h2>Related commands</h2><div class="chips">${c.related_commands.map(r=>`<span class="chip" data-id="${esc(r.id)}">${esc(r.name)}</span>`).join('')}</div>`:''}`;
+    $('#detail').scrollTop=0;
+    document.querySelectorAll('.card').forEach(e=>e.classList.toggle('on',e.dataset.id===id));
   }catch(e){
-
-    $('#detail').innerHTML=
-      `<div class="empty">${esc(e.message)}</div>`;
-
+    $('#detail').innerHTML=`<div class="empty">${esc(e.message)}</div>`;
   }
 }
 
+/* ---------------- Clipboard (fallback per http non sicuro) ---------------- */
+async function copyText(t){
+  try{await navigator.clipboard.writeText(t)}
+  catch{
+    const ta=document.createElement('textarea');
+    ta.value=t;ta.style.cssText='position:fixed;opacity:0';
+    document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy')}catch{}
+    ta.remove();
+  }
+}
 
-/* -------------------------------------------------------
-   Events
-------------------------------------------------------- */
-
+/* ---------------- Events ---------------- */
 document.addEventListener('click',e=>{
-
+  // FIX: questo ramo mancava, per questo la nav non rispondeva
   const n=e.target.closest('.nav');
-
   if(n){
-    sel={
-      tool:n.dataset.t||null,
-      cat:n.dataset.c||null
-    };
-
-    renderNav();
-    refresh();
-    return;
+    sel={tool:n.dataset.t||null,cat:n.dataset.c||null};
+    page=1;                               // ogni cambio filtro riparte da pagina 1
+    renderNav();refresh(true);return;
   }
-
+  const pb=e.target.closest('.page-btn');
+  if(pb){if(!pb.disabled){page=parseInt(pb.dataset.page,10);refresh(true)}return}
   const i=e.target.closest('[data-id]');
-
-  if(i){
-    show(i.dataset.id);
-    return;
-  }
-
+  if(i){show(i.dataset.id);return}
   const c=e.target.closest('.cp');
-
-  if(c){
-    navigator.clipboard.writeText(c.dataset.copy);
-
-    c.textContent='Copied ✓';
-
-    setTimeout(
-      ()=>c.textContent='Copy',
-      1200
-    );
-  }
-
+  if(c){copyText(c.dataset.copy);c.textContent='Copied ✓';setTimeout(()=>c.textContent='Copy',1200)}
 });
 
+$('#themeToggle').addEventListener('click',()=>
+  setTheme(document.documentElement.classList.contains('light')?'dark':'light'));
 
 $('#q').addEventListener('input',()=>{
   clearTimeout(timer);
-  timer=setTimeout(refresh,200);
+  page=1;                                  // nuova ricerca/svuotamento: pagina 1
+  timer=setTimeout(()=>refresh(true),250);
 });
-
 
 document.addEventListener('keydown',e=>{
-  if(
-    e.key==='/' &&
-    document.activeElement!==$('#q')
-  ){
-    e.preventDefault();
-    $('#q').focus();
-  }
+  if(e.key==='/'&&document.activeElement!==$('#q')){e.preventDefault();$('#q').focus()}
 });
 
-
-/* -------------------------------------------------------
-   Init
-------------------------------------------------------- */
-
+/* ---------------- Init ---------------- */
 (async()=>{
-
   initTheme();
-
   try{
-
-    tools=await api('/api/tools');
-
+    tools=await get('/api/tools');
     renderNav();
-
     await refresh();
-
-    if(location.hash.length>1){
-      show(
-        decodeURIComponent(
-          location.hash.slice(1)
-        )
-      );
-    }
-
+    if(location.hash.length>1)show(decodeURIComponent(location.hash.slice(1)));
   }catch(e){
-
-    $('#list').innerHTML=
-      `<div class="empty">${esc(e.message)}</div>`;
-
+    $('#list').innerHTML=`<div class="empty">${esc(e.message)}</div>`;
   }
-
 })();
 </script>
-
 </body>
 </html>
