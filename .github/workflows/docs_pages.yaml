@@ -1,0 +1,46 @@
+name: Deploy DevOps Wiki to Pages
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+# Permessi necessari per pubblicare su Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Se openapi.json viene generato dal codice, mettilo qui.
+      # Se è già fisicamente salvato in /docs/, salta questo passaggio.
+      - name: Ensure openapi.json is ready
+        run: |
+          echo "Building or moving API spec if necessary..."
+          # cp path/al/tuo/openapi.json docs/openapi.json
+
+      - name: Setup GitHub Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Carichiamo SOLO la cartella docs/ (non tutto il repository)
+          path: './docs'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
