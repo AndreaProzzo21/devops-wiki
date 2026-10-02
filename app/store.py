@@ -8,7 +8,20 @@ from rapidfuzz import fuzz, process
 
 from .models import Command, CommandDetail, CommandPage, CommandSummary
 
-DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "commands"
+# Cerca la cartella data/commands risalendo dalle directory o dalla root corrente
+def _find_data_dir() -> Path:
+    # Prova i percorsi comuni
+    candidates = [
+        Path(__file__).resolve().parent.parent / "data" / "commands",
+        Path("data/commands"),
+        Path("../data/commands")
+    ]
+    for p in candidates:
+        if p.exists() and p.is_dir():
+            return p
+    return Path("data/commands") # Fallback di default
+
+DATA_DIR = _find_data_dir()
 
 # Pesi BM25 per colonna (stesso ordine della CREATE VIRTUAL TABLE)
 COLUMNS = ["id", "name", "tool", "category", "keywords", "summary", "description", "flags", "examples"]

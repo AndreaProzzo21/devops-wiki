@@ -12,12 +12,8 @@ from slowapi.util import get_remote_address
 from .models import CommandDetail, CommandPage, CommandSummary
 from .store import CommandStore
 
-# Inizializziamo lo store a livello di modulo per evitare NameError 
-# anche se il TestClient viene eseguito senza il context manager del lifespan.
-try:
-    store = CommandStore()
-except Exception:
-    store = None
+# Istanza globale pulita dello store
+store = CommandStore()
 
 # Global IP limit; search has a stricter ceiling (burst per second + minute).
 BEHIND_CLOUDFLARE = os.getenv("BEHIND_CLOUDFLARE", "").lower() in {"1", "true", "yes"}
