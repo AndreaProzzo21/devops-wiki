@@ -5,11 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DevOps Wiki - API Documentation</title>
 
-<!-- Swagger UI CSS -->
-<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+<!-- Favicon -->
+<link rel="icon" type="image/png" sizes="192x192" href="/ico.png">
 
 <style>
-/* Il tuo tema fighissimo */
+/* Custom Theme Variables */
 :root {
   --bg:#0d1117; --panel:#161b22; --panel-hover:#1c2128; --line:#262d36; --txt:#e6edf3; --mut:#8b949e;
   --acc:#326ce5; --acc-hover:#4b7ff0; --warn:#f5a524; --bad:#f85149; --code:#010409;
@@ -57,16 +57,17 @@ header {
 .btn-secondary { background: var(--panel); color: var(--txt); border: 1px solid var(--line); }
 .btn-secondary:hover { border-color: var(--acc); background: var(--panel-hover); }
 
-/* Swagger Container */
-/* Swagger è nativamente chiaro, lo mettiamo in un container bianco con i bordi arrotondati per farlo risaltare elegantemente sul tuo sfondo scuro/chiaro */
-.swagger-wrapper {
+/* ReDoc Container */
+/* ReDoc defaults to a light theme. We wrap it in a white container to make it pop elegantly on the dark/light background. */
+.redoc-wrapper {
   max-width: 1400px; margin: 40px auto; padding: 0 20px; width: 100%; flex: 1;
 }
-#swagger-ui {
+.redoc-container {
   background: #ffffff; border-radius: 12px; overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+  display: block; position: relative;
 }
-:root.light #swagger-ui { border: 1px solid var(--line); box-shadow: none; }
+:root.light .redoc-container { border: 1px solid var(--line); box-shadow: none; }
 </style>
 </head>
 <body>
@@ -78,7 +79,7 @@ header {
 
 <main>
   <section class="hero">
-    <h1>DevOps Infrastructure API</h1>
+    <h1>DevOps Wiki API</h1>
     <p>
       Welcome to the DevOps Wiki documentation. This is the single source of truth for all automation scripts, deployment webhooks, and infrastructure APIs.
     </p>
@@ -92,13 +93,15 @@ header {
     </div>
   </section>
 
-  <section class="swagger-wrapper">
-    <div id="swagger-ui"></div>
+  <section class="redoc-wrapper">
+    <div class="redoc-container">
+      <redoc spec-url="openapi.json"></redoc>
+    </div>
   </section>
 </main>
 
-<!-- Swagger UI Bundle -->
-<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<!-- ReDoc Standalone Bundle -->
+<script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
 <script>
   /* --- Theme Logic --- */
   function setTheme(theme) {
@@ -107,6 +110,7 @@ header {
     document.getElementById('themeToggle').textContent = light ? '☾' : '☀';
     try { localStorage.setItem('devopswiki-theme', theme); } catch {}
   }
+  
   function initTheme() {
     let saved = null; 
     try { saved = localStorage.getItem('devopswiki-theme'); } catch {}
@@ -118,17 +122,9 @@ header {
     setTheme(document.documentElement.classList.contains('light') ? 'dark' : 'light');
   });
 
-  /* --- Init Everything --- */
+  /* --- Init --- */
   window.onload = () => {
     initTheme();
-    // Inizializza Swagger UI leggendo il file openapi.json locale
-    window.ui = SwaggerUIBundle({
-      url: "openapi.json", 
-      dom_id: '#swagger-ui',
-      deepLinking: true,
-      presets: [ SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset ],
-      layout: "BaseLayout"
-    });
   };
 </script>
 </body>
