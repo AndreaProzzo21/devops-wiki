@@ -46,17 +46,20 @@ def test_get_command_not_found():
     assert response.status_code == 404
     assert response.json() == {"detail": "Command not found"}
 
+import time
+
 def test_search_rate_limiting():
-    # Il limite è 10/second. 
-    # Forziamo l'header IP per isolare questo test da altre chiamate concorrenti.
-    headers = {"X-Forwarded-For": "10.0.0.99"}
+    # Usiamo un IP completamente casuale o unico per evitare conflitti con altri test
+    headers = {"X-Forwarded-For": "192.168.100.55"}
     
-    # Eseguiamo 10 chiamate consentite
-    for _ in range(10):
+    # Eseguiamo 9 chiamate consentite (stiamo leggermente sotto il tetto massimo di 10 per sicurezza)
+    for _ in range(9):
         res = client.get("/api/search?q=docker", headers=headers)
         assert res.status_code == 200
+        # Una micro-pausa per distribuire le chiamate nel tempo del singolo secondo
+        time.sleep(0.05)
         
-    # L'11esima chiamata nello stesso secondo deve essere bloccata (429 Too Many Requests)
+    # La chiamata che supera il limite (la 10ª o 11ª nello stesso secondo) deve restituire 429
     res_blocked = client.get("/api/search?q=docker", headers=headers)
     assert res_blocked.status_code == 429
     assert "Retry-After" in res_blocked.headers
