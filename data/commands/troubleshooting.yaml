@@ -160,7 +160,7 @@
 - id: ts-terminating-stuck
   tool: troubleshooting
   category: kubernetes
-  name: Pod or namespace stuck in Terminating
+  name: Pod or ns stuck in Terminating
   syntax: kubectl get pod POD -o jsonpath='{.metadata.finalizers}'
   summary: A resource will not disappear after deletion
   description: Usually finalizers waiting for a controller that is gone, a node that is unreachable, or an unmounted volume. Forcing deletion skips cleanup, use it as a last resort.
