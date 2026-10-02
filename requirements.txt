@@ -3,3 +3,4 @@ uvicorn
 pyyaml
 rapidfuzz
 pydantic>=2
+slowapi
