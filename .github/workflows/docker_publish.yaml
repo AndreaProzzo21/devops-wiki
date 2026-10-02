@@ -56,7 +56,7 @@ jobs:
           pip install pytest httpx
 
       - name: Run Test Suite
-        run: pytest -v tests/
+        run: python -m pytest -v tests/
 
   # --- JOB 2: BUILD & PUSH ---
   docker:
