@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DevOps Wiki - API Documentation</title>
+
+<!-- Swagger UI CSS -->
+<link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+
+<style>
+/* Il tuo tema fighissimo */
+:root {
+  --bg:#0d1117; --panel:#161b22; --panel-hover:#1c2128; --line:#262d36; --txt:#e6edf3; --mut:#8b949e;
+  --acc:#326ce5; --acc-hover:#4b7ff0; --warn:#f5a524; --bad:#f85149; --code:#010409;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+:root.light {
+  --bg:#f7f3ea; --panel:#fffdf8; --panel-hover:#f1ece2; --line:#ded8cc; --txt:#252a31; --mut:#737981;
+  --acc:#326ce5; --acc-hover:#2459c7; --warn:#a96900; --bad:#d93636; --code:#f0ece4;
+}
+* { box-sizing: border-box; }
+body { 
+  background: var(--bg); color: var(--txt); 
+  font: 14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;
+  margin: 0; display: flex; flex-direction: column; min-height: 100vh;
+  transition: background .2s ease, color .2s ease;
+}
+
+/* Header */
+header {
+  display: flex; justify-content: space-between; align-items: center; 
+  padding: 12px 20px; border-bottom: 1px solid var(--line); background: var(--panel);
+}
+.logo { font-weight: 700; letter-spacing: .3px; font-size: 16px; }
+.logo span { color: var(--acc); }
+#themeToggle {
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px; color: var(--txt); 
+  cursor: pointer; font-size: 16px; transition: all .15s ease;
+}
+#themeToggle:hover { border-color: var(--acc); color: var(--acc); }
+
+/* Hero Section */
+.hero {
+  text-align: center; padding: 60px 20px; border-bottom: 1px solid var(--line);
+}
+.hero h1 { font-family: var(--mono); font-size: 32px; margin: 0 0 12px; }
+.hero p { color: var(--mut); font-size: 16px; max-width: 600px; margin: 0 auto 32px; }
+.btn-group { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn {
+  padding: 10px 24px; border-radius: 8px; font-weight: 600; text-decoration: none;
+  font-size: 14px; transition: all .2s ease; cursor: pointer; display: inline-flex; align-items: center; gap: 8px;
+}
+.btn-primary { background: var(--acc); color: #fff; border: 1px solid var(--acc); }
+.btn-primary:hover { background: var(--acc-hover); border-color: var(--acc-hover); }
+.btn-secondary { background: var(--panel); color: var(--txt); border: 1px solid var(--line); }
+.btn-secondary:hover { border-color: var(--acc); background: var(--panel-hover); }
+
+/* Swagger Container */
+/* Swagger è nativamente chiaro, lo mettiamo in un container bianco con i bordi arrotondati per farlo risaltare elegantemente sul tuo sfondo scuro/chiaro */
+.swagger-wrapper {
+  max-width: 1400px; margin: 40px auto; padding: 0 20px; width: 100%; flex: 1;
+}
+#swagger-ui {
+  background: #ffffff; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+:root.light #swagger-ui { border: 1px solid var(--line); box-shadow: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">DevOps<span>Wiki</span></div>
+  <button id="themeToggle" type="button" aria-label="Switch theme">☀</button>
+</header>
+
+<main>
+  <section class="hero">
+    <h1>DevOps Infrastructure API</h1>
+    <p>
+      Welcome to the DevOps Wiki documentation. This is the single source of truth for all automation scripts, deployment webhooks, and infrastructure APIs.
+    </p>
+    <div class="btn-group">
+      <a href="https://github.com/tuouser/tuorepo" target="_blank" class="btn btn-primary">
+        View on GitHub
+      </a>
+      <a href="https://github.com/tuouser/tuorepo/pulls" target="_blank" class="btn btn-secondary">
+        Contribute
+      </a>
+    </div>
+  </section>
+
+  <section class="swagger-wrapper">
+    <div id="swagger-ui"></div>
+  </section>
+</main>
+
+<!-- Swagger UI Bundle -->
+<script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+<script>
+  /* --- Theme Logic --- */
+  function setTheme(theme) {
+    const light = theme === 'light';
+    document.documentElement.classList.toggle('light', light);
+    document.getElementById('themeToggle').textContent = light ? '☾' : '☀';
+    try { localStorage.setItem('devopswiki-theme', theme); } catch {}
+  }
+  function initTheme() {
+    let saved = null; 
+    try { saved = localStorage.getItem('devopswiki-theme'); } catch {}
+    if (saved === 'light' || saved === 'dark') { setTheme(saved); return; }
+    setTheme(window.matchMedia && matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  }
+
+  document.getElementById('themeToggle').addEventListener('click', () => {
+    setTheme(document.documentElement.classList.contains('light') ? 'dark' : 'light');
+  });
+
+  /* --- Init Everything --- */
+  window.onload = () => {
+    initTheme();
+    // Inizializza Swagger UI leggendo il file openapi.json locale
+    window.ui = SwaggerUIBundle({
+      url: "openapi.json", 
+      dom_id: '#swagger-ui',
+      deepLinking: true,
+      presets: [ SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset ],
+      layout: "BaseLayout"
+    });
+  };
+</script>
+</body>
+</html>
