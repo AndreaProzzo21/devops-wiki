@@ -5,5 +5,5 @@ __pycache__/
 .gitignore
 Dockerfile
 docker-compose.yaml
-test/
+tests/
 
