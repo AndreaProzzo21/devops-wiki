@@ -58,7 +58,7 @@
     - cmd: "aws sts get-caller-identity --profile dev"
       description: "Verify the session works"
   keywords: [sso, identity center, login, expired token, token has expired, single sign on, authenticate, refresh credentials]
-  related: [aws-configure, aws-sts-get-caller-identity, aws-eks-update-kubeconfig]
+  related: [aws-configure, aws-sts-get-caller-identity]
 
 - id: aws-sts-get-caller-identity
   tool: aws
@@ -75,7 +75,7 @@
     - cmd: "aws sts get-caller-identity --profile prod --query Arn --output text"
       description: "Check which role a profile assumes"
   keywords: [whoami, which account, current identity, check credentials, account id, caller identity, wrong account, who am i]
-  related: [aws-configure, aws-sso-login, aws-sts-assume-role, aws-iam-simulate-principal-policy]
+  related: [aws-configure, aws-sso-login, aws-sts-assume-role]
 
 - id: aws-sts-assume-role
   tool: aws
@@ -105,7 +105,7 @@
     - cmd: "aws s3 ls --profile deploy-role"
       description: "With role_arn and source_profile set in ~/.aws/config the CLI assumes it for you"
   keywords: [assume role, switch role, cross account, temporary credentials, mfa, sts, role arn, session token, impersonate]
-  related: [aws-sts-get-caller-identity, aws-iam-role, aws-configure, aws-sts-decode-authorization-message]
+  related: [aws-sts-get-caller-identity, aws-configure]
 
 - id: aws-global-options
   tool: aws
@@ -130,7 +130,7 @@
     - flag: "--generate-cli-skeleton, --cli-input-json"
       description: "Dump a JSON template of all parameters, then run from the edited file"
     - flag: "--dry-run"
-      description: "Check permissions without executing (EC2 and a few other services only)"
+      description: "Check permissions and parameters without launching"
     - flag: "--debug"
       description: "Full HTTP-level trace, shows exactly which request and credentials were used"
     - flag: "--cli-auto-prompt"
@@ -172,7 +172,7 @@
     - cmd: "aws ec2 wait help"
       description: "List the waiters a service offers"
   keywords: [wait for, poll, sequence, script, until ready, waiter, block until, availability]
-  related: [aws-global-options, aws-cloudformation-deploy, aws-ecs-services, aws-rds-instance-actions]
+  related: [aws-global-options, aws-ec2-describe-instances]
 
 # ======================= EC2 =======================
 
@@ -202,7 +202,7 @@
     - cmd: "aws ec2 describe-instance-status --include-all-instances --filters Name=instance-status.status,Values=impaired"
       description: "Instances with failing status checks"
   keywords: [list instances, servers, ec2 list, running instances, find instance, instance ip, vms, filter by tag, describe]
-  related: [aws-ec2-run-instances, aws-ec2-start-stop-instances, aws-ssm-start-session, aws-global-options]
+  related: [aws-ec2-run-instances, aws-ec2-start-stop-instances, aws-global-options]
 
 - id: aws-ec2-run-instances
   tool: aws
@@ -240,7 +240,7 @@
     - cmd: "aws ec2 run-instances --image-id ami-0abc1234 --instance-type t3.micro --user-data file://init.sh --count 2"
       description: "Two instances running a bootstrap script"
   keywords: [launch instance, create server, new vm, start new ec2, provision, create instance, user data]
-  related: [aws-ec2-images, aws-ec2-security-group-ingress, aws-ec2-terminate-instances, aws-wait, terraform-apply]
+  related: [aws-ec2-images, aws-ec2-security-group-ingress, aws-ec2-terminate-instances, aws-wait]
   danger: caution
 
 - id: aws-ec2-start-stop-instances
@@ -286,7 +286,7 @@
     - cmd: "aws ec2 modify-instance-attribute --instance-id i-0abc123 --disable-api-termination"
       description: "Turn on termination protection"
   keywords: [delete instance, destroy server, remove ec2, terminate, kill instance, cleanup]
-  related: [aws-ec2-describe-instances, aws-ec2-start-stop-instances, terraform-destroy]
+  related: [aws-ec2-describe-instances, aws-ec2-start-stop-instances]
   danger: destructive
 
 - id: aws-ec2-security-group-ingress
@@ -317,7 +317,7 @@
     - cmd: "aws ec2 describe-security-groups --filters Name=ip-permission.cidr,Values=0.0.0.0/0 --query 'SecurityGroups[].[GroupId,GroupName]' --output table"
       description: "Audit groups open to the whole internet"
   keywords: [open port, firewall, security group, allow access, ingress rule, close port, 0.0.0.0/0, network access, inbound]
-  related: [aws-ec2-describe-vpc-networking, aws-ssm-start-session, aws-ec2-run-instances]
+  related: [aws-ec2-describe-vpc-networking, aws-ec2-run-instances]
   danger: caution
 
 - id: aws-ec2-images
@@ -344,7 +344,7 @@
     - cmd: "aws ec2 create-image --instance-id i-0abc123 --name web-golden-$(date +%F)"
       description: "Create an image from a configured server"
   keywords: [ami, machine image, latest amazon linux, golden image, find ami, create image, ubuntu ami, image id]
-  related: [aws-ec2-run-instances, aws-ssm-parameters, aws-ec2-create-snapshot]
+  related: [aws-ec2-run-instances, aws-ec2-create-snapshot]
 
 - id: aws-ec2-create-snapshot
   tool: aws
@@ -402,4 +402,4 @@
     - cmd: "aws ec2 describe-vpcs --query 'Vpcs[].[VpcId,CidrBlock,IsDefault]' --output table"
       description: "All VPCs in the region"
   keywords: [vpc, subnet, route table, nat gateway, network, connectivity, cidr, internet gateway, network acl, find ip owner]
-  related: [aws-ec2-security-group-ingress, aws-elbv2, aws-eks-describe-cluster]
+  related: [aws-ec2-security-group-ingress]
