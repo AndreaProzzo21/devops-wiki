@@ -3,9 +3,26 @@ name: Build and push Docker image
 on:
   push:
     branches: [main]
-    tags: ["v*"]          # es. git tag v1.2.0 && git push --tags
+    tags: ["v*"]          # le release (git tag v1.2.0) partono sempre: i filtri paths non valgono per i tag
+    paths:                # builda solo se cambia qualcosa che finisce nell'immagine
+      - Dockerfile
+      - .dockerignore
+      - requirements.txt
+      - app/**
+      - data/**
+      - static/**
+      - .github/workflows/docker-publish.yml
   pull_request:
     branches: [main]      # sulle PR si builda soltanto, senza pubblicare
+    paths:
+      - Dockerfile
+      - .dockerignore
+      - requirements.txt
+      - app/**
+      - data/**
+      - static/**
+      - .github/workflows/docker-publish.yml
+  workflow_dispatch:      # pulsante "Run workflow" per rifare la build a mano
 
 # Se arriva un nuovo push sullo stesso branch, annulla la build precedente
 concurrency:
@@ -39,7 +56,7 @@ jobs:
 
       # Genera i tag automaticamente:
       #   push su main  -> latest + sha-abc1234
-      #   tag v1.2.3    -> 1.2.3 + 1.2
+      #   tag v1.2.3    -> 1.2.3 + 1.2 (+ sha-abc1234)
       - name: Docker metadata
         id: meta
         uses: docker/metadata-action@v5
