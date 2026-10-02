@@ -12,21 +12,20 @@ from slowapi.util import get_remote_address
 from .models import CommandDetail, CommandPage, CommandSummary
 from .store import CommandStore
 
-store: CommandStore
+# Inizializziamo lo store a livello di modulo per evitare NameError 
+# anche se il TestClient viene eseguito senza il context manager del lifespan.
+try:
+    store = CommandStore()
+except Exception:
+    store = None
 
 # Global IP limit; search has a stricter ceiling (burst per second + minute).
-# With multiple workers/replicas, in-memory counters are per-process: use Redis if global limits are needed.
 BEHIND_CLOUDFLARE = os.getenv("BEHIND_CLOUDFLARE", "").lower() in {"1", "true", "yes"}
 
 
 def client_ip(request: Request) -> str:
     """
     Extract the IP address used as the rate limit key.
-
-    Behind Cloudflare Tunnel, the TCP peer is always cloudflared, so get_remote_address()
-    would put ALL users in the same bucket. CF-Connecting-IP contains a single address
-    (X-Forwarded-For appends: left values are chosen by the client). It should be considered
-    reliable ONLY if the app is reachable EXCLUSIVELY via the tunnel (no published ports).
     """
     if BEHIND_CLOUDFLARE:
         ip = request.headers.get("cf-connecting-ip")
@@ -41,7 +40,8 @@ limiter = Limiter(key_func=client_ip, default_limits=["240/minute"])
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     global store
-    store = CommandStore()  # fails fast if the dataset is invalid
+    store = CommandStore()  # Ricarica e valida all'avvio
+    app.state.store = store
     yield
 
 
