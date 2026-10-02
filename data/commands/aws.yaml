@@ -1,0 +1,286 @@
+# ======================= SETUP / IDENTITY =======================
+- id: aws-configure
+  tool: aws
+  category: setup
+  name: aws configure
+  syntax: aws configure [list|list-profiles|get KEY|set KEY VALUE|sso] [--profile NAME]
+  summary: "Set up credentials, default region and named profiles for the AWS CLI"
+  description: "Credentials live in ~/.aws/credentials and settings in ~/.aws/config. Environment variables (AWS_PROFILE, AWS_REGION, AWS_ACCESS_KEY_ID) override the files. Prefer SSO or role-based profiles over long-lived access keys."
+  flags:
+    - {flag: "--profile", description: "Use or create a named profile (same as the AWS_PROFILE environment variable)"}
+    - {flag: "list", description: "Show the effective configuration and where each value comes from"}
+    - {flag: "list-profiles", description: "All configured profiles"}
+    - {flag: "get / set", description: "Read or write a single setting such as region or output"}
+    - {flag: "sso", description: "Interactive setup of an IAM Identity Center (SSO) profile"}
+    - {flag: "export-credentials --format env", description: "Print the resolved credentials as export statements for tools that do not read profiles"}
+  examples:
+    - {cmd: "aws configure --profile prod", description: "Prompts for access key, secret, region and output format"}
+    - {cmd: "aws configure set region eu-west-1 --profile prod", description: "Change one value without prompts"}
+    - {cmd: "aws configure list --profile prod", description: "Check which credentials and region are really in use"}
+    - {cmd: "export AWS_PROFILE=prod AWS_REGION=eu-west-1", description: "Select a profile for the whole shell session"}
+    - {cmd: "aws configure export-credentials --profile prod --format env", description: "Credentials for Terraform, kubectl plugins or Docker builds"}
+  keywords: [credentials, login, profile, region, setup aws cli, access key, default region, aws config, environment variables, authenticate]
+  related: [aws-sso-login, aws-sts-get-caller-identity, aws-global-options, aws-sts-assume-role]
+
+- id: aws-sso-login
+  tool: aws
+  category: setup
+  name: aws sso login
+  syntax: aws sso login [--profile NAME] [--use-device-code] [--no-browser] | aws sso logout
+  summary: "Authenticate with IAM Identity Center (SSO) and cache short-lived credentials"
+  description: "The recommended way to use AWS from a laptop. Tokens expire (typically after a few hours), run it again when you see ExpiredToken or Token has expired errors."
+  flags:
+    - {flag: "--profile", description: "SSO profile created with aws configure sso"}
+    - {flag: "--use-device-code", description: "Print a code to enter on another device, useful over SSH or in containers"}
+    - {flag: "--no-browser", description: "Do not open a browser, just print the URL"}
+    - {flag: "logout", description: "Remove cached SSO tokens"}
+  examples:
+    - {cmd: "aws sso login --profile dev", description: "Browser-based login"}
+    - {cmd: "aws sso login --profile dev --use-device-code", description: "Login from a headless server"}
+    - {cmd: "aws sts get-caller-identity --profile dev", description: "Verify the session works"}
+  keywords: [sso, identity center, login, expired token, token has expired, single sign on, authenticate, refresh credentials]
+  related: [aws-configure, aws-sts-get-caller-identity, aws-eks-update-kubeconfig]
+
+- id: aws-sts-get-caller-identity
+  tool: aws
+  category: setup
+  name: aws sts get-caller-identity
+  syntax: aws sts get-caller-identity [--query Account|Arn|UserId] [--output text]
+  summary: "Show which AWS account and identity your credentials resolve to"
+  description: "The AWS equivalent of whoami. It needs no IAM permissions, so it is the first command to run when something behaves unexpectedly, wrong profile, wrong account or an assumed role."
+  examples:
+    - {cmd: "aws sts get-caller-identity", description: "Account ID, user or role ARN and user ID"}
+    - {cmd: "aws sts get-caller-identity --query Account --output text", description: "Just the account ID, for scripts"}
+    - {cmd: "aws sts get-caller-identity --profile prod --query Arn --output text", description: "Check which role a profile assumes"}
+  keywords: [whoami, which account, current identity, check credentials, account id, caller identity, wrong account, who am i]
+  related: [aws-configure, aws-sso-login, aws-sts-assume-role, aws-iam-simulate-principal-policy]
+
+- id: aws-sts-assume-role
+  tool: aws
+  category: setup
+  name: aws sts assume-role
+  syntax: aws sts assume-role --role-arn ARN --role-session-name NAME [--duration-seconds N] [--external-id ID] [--serial-number MFA --token-code CODE]
+  summary: "Obtain temporary credentials for an IAM role, for example in another account"
+  description: "For daily use define role_arn and source_profile in ~/.aws/config and let the CLI assume the role automatically. Call assume-role directly when a script needs the raw credentials."
+  flags:
+    - {flag: "--role-arn", description: "Role to assume"}
+    - {flag: "--role-session-name", description: "Label that appears in CloudTrail, use something traceable"}
+    - {flag: "--duration-seconds", description: "Session length (900 to the role's maximum, default 3600)"}
+    - {flag: "--external-id", description: "Required by roles that trust third parties"}
+    - {flag: "--serial-number, --token-code", description: "MFA device ARN and current code"}
+    - {flag: "--policy", description: "Further restrict the session permissions"}
+  examples:
+    - {cmd: "aws sts assume-role --role-arn arn:aws:iam::123456789012:role/Deploy --role-session-name ci-deploy", description: "Returns AccessKeyId, SecretAccessKey and SessionToken"}
+    - {cmd: "aws sts assume-role --role-arn arn:aws:iam::123456789012:role/Admin --role-session-name me --serial-number arn:aws:iam::111122223333:mfa/alice --token-code 123456", description: "Role that requires MFA"}
+    - {cmd: "aws s3 ls --profile deploy-role", description: "With role_arn and source_profile set in ~/.aws/config the CLI assumes it for you"}
+  keywords: [assume role, switch role, cross account, temporary credentials, mfa, sts, role arn, session token, impersonate]
+  related: [aws-sts-get-caller-identity, aws-iam-role, aws-configure, aws-sts-decode-authorization-message]
+
+- id: aws-global-options
+  tool: aws
+  category: setup
+  name: aws global options (--query, --output, --profile ...)
+  syntax: aws SERVICE COMMAND [--profile P] [--region R] [--output json|text|table|yaml] [--query JMESPATH] [--no-cli-pager] [--endpoint-url URL]
+  summary: "Options that work on every AWS CLI command: filtering, formatting, profiles and debugging"
+  description: "--query uses JMESPath and is applied client-side after the API call. --filters (when a command has it) filters server-side and is faster on large accounts."
+  flags:
+    - {flag: "--query", description: "JMESPath expression to pick and reshape fields"}
+    - {flag: "--output", description: "json, yaml, text (scripting) or table (humans)"}
+    - {flag: "--profile / --region", description: "Override the profile or region for one command"}
+    - {flag: "--no-cli-pager", description: "Disable the pager, needed in scripts and CI (or set AWS_PAGER to empty)"}
+    - {flag: "--endpoint-url", description: "Talk to another endpoint such as LocalStack or MinIO"}
+    - {flag: "--max-items / --page-size / --no-paginate", description: "Control automatic pagination"}
+    - {flag: "--generate-cli-skeleton, --cli-input-json", description: "Dump a JSON template of all parameters, then run from the edited file"}
+    - {flag: "--dry-run", description: "Check permissions without executing (EC2 and a few other services only)"}
+    - {flag: "--debug", description: "Full HTTP-level trace, shows exactly which request and credentials were used"}
+    - {flag: "--cli-auto-prompt", description: "Interactive autocomplete for commands and parameters"}
+  examples:
+    - {cmd: "aws ec2 describe-instances --query 'Reservations[].Instances[].InstanceId' --output text", description: "Plain list of IDs"}
+    - {cmd: "aws ec2 describe-instances --query 'Reservations[].Instances[].{ID:InstanceId,Type:InstanceType}' --output table", description: "Reshape into a table"}
+    - {cmd: "aws ec2 run-instances --generate-cli-skeleton > run.json && aws ec2 run-instances --cli-input-json file://run.json", description: "Edit complex requests as a file"}
+    - {cmd: "aws s3 ls --endpoint-url http://localhost:4566", description: "Use LocalStack for local testing"}
+    - {cmd: "AWS_PAGER= aws iam list-users", description: "Disable the pager for a single command"}
+    - {cmd: "aws sts get-caller-identity --debug 2>&1 | grep -i 'credentials\\|Region'", description: "Find out why the wrong credentials are used"}
+  keywords: [query, jmespath, output format, filter results, pagination, endpoint url, localstack, debug, table output, skeleton, json input, pager]
+  related: [aws-configure, aws-wait, aws-ec2-describe-instances, aws-sts-get-caller-identity]
+
+- id: aws-wait
+  tool: aws
+  category: setup
+  name: aws SERVICE wait
+  syntax: aws SERVICE wait WAITER-NAME [RESOURCE OPTIONS]
+  summary: "Block until a resource reaches a state, the clean way to sequence scripts"
+  description: "Waiters poll the API for you and exit non-zero on timeout. Use them instead of sleep loops."
+  examples:
+    - {cmd: "aws ec2 wait instance-running --instance-ids i-0abc123", description: "Wait for an instance to boot"}
+    - {cmd: "aws cloudformation wait stack-create-complete --stack-name app", description: "Wait for stack creation"}
+    - {cmd: "aws rds wait db-instance-available --db-instance-identifier db1", description: "Wait for a database after a change"}
+    - {cmd: "aws ecs wait services-stable --cluster prod --services web", description: "Wait for a rolling deployment to settle"}
+    - {cmd: "aws lambda wait function-updated --function-name fn", description: "Between update-function-code and the next change"}
+    - {cmd: "aws ec2 wait help", description: "List the waiters a service offers"}
+  keywords: [wait for, poll, sequence, script, until ready, waiter, block until, availability]
+  related: [aws-global-options, aws-cloudformation-deploy, aws-ecs-services, aws-rds-instance-actions]
+
+# ======================= EC2 =======================
+- id: aws-ec2-describe-instances
+  tool: aws
+  category: ec2
+  name: aws ec2 describe-instances
+  syntax: aws ec2 describe-instances [--instance-ids IDS] [--filters Name=KEY,Values=V] [--query JMESPATH]
+  summary: "List EC2 instances with state, IPs and tags"
+  description: "Results are nested under Reservations, so almost every call uses --query. Use --filters for server-side filtering."
+  flags:
+    - {flag: "--filters", description: "Server-side filters: instance-state-name, tag:KEY, instance-type, vpc-id, private-ip-address"}
+    - {flag: "--instance-ids", description: "Specific instances"}
+    - {flag: "--query", description: "JMESPath to flatten the Reservations/Instances nesting"}
+    - {flag: "--max-items", description: "Limit output on big accounts"}
+  examples:
+    - {cmd: "aws ec2 describe-instances --filters Name=instance-state-name,Values=running --query 'Reservations[].Instances[].[InstanceId,InstanceType,PrivateIpAddress,Tags[?Key==`Name`]|[0].Value]' --output table", description: "Running instances with their Name tag"}
+    - {cmd: "aws ec2 describe-instances --filters 'Name=tag:Env,Values=prod' --query 'Reservations[].Instances[].InstanceId' --output text", description: "IDs of everything tagged Env=prod"}
+    - {cmd: "aws ec2 describe-instances --instance-ids i-0abc123 --query 'Reservations[0].Instances[0].{State:State.Name,IP:PublicIpAddress,Profile:IamInstanceProfile.Arn}'", description: "Details of one instance"}
+    - {cmd: "aws ec2 describe-instance-status --include-all-instances --filters Name=instance-status.status,Values=impaired", description: "Instances with failing status checks"}
+  keywords: [list instances, servers, ec2 list, running instances, find instance, instance ip, vms, filter by tag, describe]
+  related: [aws-ec2-run-instances, aws-ec2-start-stop-instances, aws-ssm-start-session, aws-global-options]
+
+- id: aws-ec2-run-instances
+  tool: aws
+  category: ec2
+  name: aws ec2 run-instances
+  syntax: aws ec2 run-instances --image-id AMI --instance-type TYPE [--key-name KEY] [--subnet-id ID] [--security-group-ids IDS] [--count N]
+  summary: "Launch one or more EC2 instances"
+  description: "Costs money as soon as it runs. For anything repeatable prefer Terraform or CloudFormation, and always tag instances so they can be found and cleaned up."
+  flags:
+    - {flag: "--image-id", description: "AMI to boot from"}
+    - {flag: "--instance-type", description: "Size, e.g. t3.micro"}
+    - {flag: "--key-name", description: "SSH key pair (not needed if you use SSM Session Manager)"}
+    - {flag: "--subnet-id, --security-group-ids", description: "Network placement and firewall"}
+    - {flag: "--iam-instance-profile", description: "Instance profile, Name=... or Arn=..., e.g. one with AmazonSSMManagedInstanceCore"}
+    - {flag: "--user-data", description: "Boot script, use file://init.sh"}
+    - {flag: "--tag-specifications", description: "Tags applied at creation"}
+    - {flag: "--metadata-options", description: "Enforce IMDSv2 with HttpTokens=required"}
+    - {flag: "--block-device-mappings", description: "Root volume size and encryption"}
+    - {flag: "--dry-run", description: "Check permissions and parameters without launching"}
+  examples:
+    - {cmd: "aws ec2 run-instances --image-id ami-0abc1234 --instance-type t3.micro --subnet-id subnet-0123 --security-group-ids sg-0123 --iam-instance-profile Name=ssm-profile --metadata-options HttpTokens=required --tag-specifications 'ResourceType=instance,Tags=[{Key=Name,Value=web-01},{Key=Env,Value=dev}]'", description: "Hardened small instance reachable through SSM"}
+    - {cmd: "aws ec2 run-instances --image-id ami-0abc1234 --instance-type t3.micro --dry-run", description: "Validate without creating anything"}
+    - {cmd: "aws ec2 run-instances --image-id ami-0abc1234 --instance-type t3.micro --user-data file://init.sh --count 2", description: "Two instances running a bootstrap script"}
+  keywords: [launch instance, create server, new vm, start new ec2, provision, create instance, user data]
+  related: [aws-ec2-images, aws-ec2-security-group-ingress, aws-ec2-terminate-instances, aws-wait, terraform-apply]
+  danger: caution
+
+- id: aws-ec2-start-stop-instances
+  tool: aws
+  category: ec2
+  name: aws ec2 start / stop / reboot-instances
+  syntax: aws ec2 start-instances|stop-instances|reboot-instances --instance-ids IDS
+  summary: "Power instances on and off, stopped instances stop compute billing but keep EBS charges"
+  description: "A stop and start usually gives a new public IP unless an Elastic IP is attached. Instance store data is lost on stop."
+  flags:
+    - {flag: "--instance-ids", description: "One or more instance IDs"}
+    - {flag: "stop-instances --hibernate", description: "Hibernate instead of a plain stop (needs hibernation enabled at launch)"}
+    - {flag: "--force", description: "Force a stop of an unresponsive instance"}
+  examples:
+    - {cmd: "aws ec2 stop-instances --instance-ids i-0abc123", description: "Stop one instance"}
+    - {cmd: "aws ec2 stop-instances --instance-ids $(aws ec2 describe-instances --filters 'Name=tag:Env,Values=dev' Name=instance-state-name,Values=running --query 'Reservations[].Instances[].InstanceId' --output text)", description: "Switch off every running dev instance (nightly cost saving)"}
+    - {cmd: "aws ec2 start-instances --instance-ids i-0abc123 && aws ec2 wait instance-running --instance-ids i-0abc123", description: "Start and wait until it is up"}
+  keywords: [stop instance, start instance, reboot, shutdown, power off, save money, nightly stop, restart server]
+  related: [aws-ec2-describe-instances, aws-ec2-terminate-instances, aws-wait]
+  danger: caution
+
+- id: aws-ec2-terminate-instances
+  tool: aws
+  category: ec2
+  name: aws ec2 terminate-instances
+  syntax: aws ec2 terminate-instances --instance-ids IDS
+  summary: "Permanently delete instances, root volumes are removed unless DeleteOnTermination is false"
+  description: "Cannot be undone. Check the IDs with describe-instances first, and consider enabling termination protection on important servers (modify-instance-attribute --disable-api-termination)."
+  flags:
+    - {flag: "--instance-ids", description: "Instances to delete"}
+    - {flag: "--dry-run", description: "Verify permissions and IDs without terminating"}
+  examples:
+    - {cmd: "aws ec2 terminate-instances --instance-ids i-0abc123 --dry-run", description: "Safe rehearsal"}
+    - {cmd: "aws ec2 modify-instance-attribute --instance-id i-0abc123 --disable-api-termination", description: "Turn on termination protection"}
+  keywords: [delete instance, destroy server, remove ec2, terminate, kill instance, cleanup]
+  related: [aws-ec2-describe-instances, aws-ec2-start-stop-instances, terraform-destroy]
+  danger: destructive
+
+- id: aws-ec2-security-group-ingress
+  tool: aws
+  category: ec2
+  name: aws ec2 authorize / revoke-security-group-ingress
+  syntax: aws ec2 authorize-security-group-ingress|revoke-security-group-ingress --group-id SG --protocol tcp --port N --cidr CIDR
+  summary: "Open or close inbound firewall rules on a security group"
+  description: "Never open SSH or databases to 0.0.0.0/0. Prefer referencing another security group (--source-group) or SSM Session Manager."
+  flags:
+    - {flag: "--group-id", description: "Target security group"}
+    - {flag: "--protocol, --port", description: "tcp, udp, icmp or -1 and the port or range (e.g. 8000-8100)"}
+    - {flag: "--cidr", description: "Source IPv4 range, e.g. 203.0.113.7/32 for a single address"}
+    - {flag: "--source-group", description: "Allow traffic from another security group instead of an IP"}
+    - {flag: "--ip-permissions", description: "Full JSON/shorthand rule definition for complex cases"}
+  examples:
+    - {cmd: "aws ec2 authorize-security-group-ingress --group-id sg-0123 --protocol tcp --port 443 --cidr 203.0.113.0/24", description: "Allow HTTPS from an office range"}
+    - {cmd: "aws ec2 authorize-security-group-ingress --group-id sg-db --protocol tcp --port 5432 --source-group sg-app", description: "Database reachable only from the app tier"}
+    - {cmd: "aws ec2 revoke-security-group-ingress --group-id sg-0123 --protocol tcp --port 22 --cidr 0.0.0.0/0", description: "Close an open SSH rule"}
+    - {cmd: "aws ec2 describe-security-groups --filters Name=ip-permission.cidr,Values=0.0.0.0/0 --query 'SecurityGroups[].[GroupId,GroupName]' --output table", description: "Audit groups open to the whole internet"}
+  keywords: [open port, firewall, security group, allow access, ingress rule, close port, 0.0.0.0/0, network access, inbound]
+  related: [aws-ec2-describe-vpc-networking, aws-ssm-start-session, aws-ec2-run-instances]
+  danger: caution
+
+- id: aws-ec2-images
+  tool: aws
+  category: ec2
+  name: aws ec2 describe-images / create-image
+  syntax: aws ec2 describe-images --owners OWNER [--filters ...] [--query ...] | aws ec2 create-image --instance-id ID --name NAME
+  summary: "Find the right AMI, or bake a new one from a running instance"
+  description: "The most reliable way to get the current Amazon Linux AMI is the public SSM parameter, it never goes stale."
+  flags:
+    - {flag: "--owners", description: "amazon, self or an account ID (always set it to avoid untrusted public AMIs)"}
+    - {flag: "--filters", description: "name=al2023-ami-*, architecture=arm64, state=available"}
+    - {flag: "create-image --no-reboot", description: "Do not reboot the source instance (file system consistency not guaranteed)"}
+    - {flag: "deregister-image", description: "Remove an AMI (snapshots must be deleted separately)"}
+  examples:
+    - {cmd: "aws ssm get-parameter --name /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64 --query Parameter.Value --output text", description: "Latest Amazon Linux 2023 AMI ID for x86"}
+    - {cmd: "aws ec2 describe-images --owners self --query 'sort_by(Images,&CreationDate)[-5:].[ImageId,Name,CreationDate]' --output table", description: "Your five newest AMIs"}
+    - {cmd: "aws ec2 create-image --instance-id i-0abc123 --name web-golden-$(date +%F)", description: "Create an image from a configured server"}
+  keywords: [ami, machine image, latest amazon linux, golden image, find ami, create image, ubuntu ami, image id]
+  related: [aws-ec2-run-instances, aws-ssm-parameters, aws-ec2-create-snapshot]
+
+- id: aws-ec2-create-snapshot
+  tool: aws
+  category: ec2
+  name: aws ec2 create-snapshot / describe-volumes
+  syntax: aws ec2 create-snapshot --volume-id ID [--description TXT] | describe-volumes | describe-snapshots --owner-ids self
+  summary: "Back up EBS volumes and find unused disks that still cost money"
+  flags:
+    - {flag: "--volume-id", description: "Volume to snapshot"}
+    - {flag: "--tag-specifications", description: "Tag the snapshot at creation"}
+    - {flag: "describe-snapshots --owner-ids self", description: "Only your own snapshots (otherwise you list the public ones)"}
+    - {flag: "delete-snapshot --snapshot-id", description: "Remove an old snapshot"}
+  examples:
+    - {cmd: "aws ec2 create-snapshot --volume-id vol-0abc123 --description 'before upgrade' --tag-specifications 'ResourceType=snapshot,Tags=[{Key=Name,Value=pre-upgrade}]'", description: "Snapshot with a tag"}
+    - {cmd: "aws ec2 describe-volumes --filters Name=status,Values=available --query 'Volumes[].[VolumeId,Size,CreateTime]' --output table", description: "Unattached volumes, classic cost leak"}
+    - {cmd: "aws ec2 describe-snapshots --owner-ids self --query 'Snapshots[?StartTime<=`2025-01-01`].[SnapshotId,StartTime,VolumeSize]' --output table", description: "Snapshots older than a date"}
+    - {cmd: "aws ec2 wait snapshot-completed --snapshot-ids snap-0abc123", description: "Wait until the snapshot is finished"}
+  keywords: [ebs, snapshot, backup disk, volume backup, unattached volumes, cleanup, disk, storage cost]
+  related: [aws-ec2-images, aws-ec2-describe-instances, aws-wait]
+
+# ======================= NETWORKING =======================
+- id: aws-ec2-describe-vpc-networking
+  tool: aws
+  category: networking
+  name: aws ec2 describe-vpcs / subnets / route-tables
+  syntax: aws ec2 describe-vpcs|describe-subnets|describe-route-tables|describe-nat-gateways|describe-internet-gateways [--filters ...]
+  summary: "Inspect VPC layout, subnets, routing and gateways when debugging connectivity"
+  description: "For connectivity problems check in order, security groups, network ACLs, route tables of the subnet, and then NAT or internet gateway."
+  flags:
+    - {flag: "--filters Name=vpc-id,Values=ID", description: "Limit to one VPC"}
+    - {flag: "describe-network-acls", description: "Stateless subnet-level firewall rules"}
+    - {flag: "describe-vpc-endpoints", description: "Private connections to AWS services"}
+    - {flag: "describe-network-interfaces", description: "Find what owns an IP address"}
+  examples:
+    - {cmd: "aws ec2 describe-subnets --filters Name=vpc-id,Values=vpc-0abc --query 'Subnets[].[SubnetId,AvailabilityZone,CidrBlock,MapPublicIpOnLaunch]' --output table", description: "Subnet layout of a VPC"}
+    - {cmd: "aws ec2 describe-route-tables --filters Name=association.subnet-id,Values=subnet-0abc --query 'RouteTables[].Routes'", description: "Where does a subnet send its traffic?"}
+    - {cmd: "aws ec2 describe-network-interfaces --filters Name=addresses.private-ip-address,Values=10.0.1.25 --query 'NetworkInterfaces[].[Description,InterfaceType]'", description: "Identify what is behind a private IP"}
+    - {cmd: "aws ec2 describe-vpcs --query 'Vpcs[].[VpcId,CidrBlock,IsDefault]' --output table", description: "All VPCs in the region"}
+  keywords: [vpc, subnet, route table, nat gateway, network, connectivity, cidr, internet gateway, network acl, find ip owner]
+  related: [aws-ec2-security-group-ingress, aws-elbv2, aws-eks-describe-cluster]
