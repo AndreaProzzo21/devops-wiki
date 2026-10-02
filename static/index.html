@@ -33,6 +33,18 @@ header{display:flex;gap:16px;align-items:center;padding:12px 20px;border-bottom:
   transition:background .2s ease,border-color .2s ease,color .2s ease,transform .15s ease}
 #themeToggle:hover{border-color:var(--acc);color:var(--acc)}
 #themeToggle:active{transform:scale(.94)}
+#themeToggle, #docsBtn {
+  width:36px; height:36px; flex:none; display:flex; align-items:center; justify-content:center;
+  background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--txt); 
+  cursor:pointer; font-size:16px; text-decoration:none;
+  transition:background .2s ease, border-color .2s ease, color .2s ease, transform .15s ease;
+}
+#themeToggle:hover, #docsBtn:hover {
+  border-color:var(--acc); color:var(--acc);
+}
+#themeToggle:active, #docsBtn:active {
+  transform:scale(.94);
+}
 
 /* FIX scroll: righe della griglia esplicite, altrimenti la riga "auto" cresce col contenuto
    e le colonne non scorrono in modo indipendente. minmax(0,...) impedisce l'overflow orizzontale. */
@@ -115,6 +127,7 @@ td:first-child{font-family:var(--mono);color:var(--warn);white-space:nowrap;widt
   <div class="logo">DevOps<span>Wiki</span></div>
   <input id="q" placeholder="Search for a command, a flag or an issue…  (e.g. rollback, pod log, --atomic)" autocomplete="off">
   <button id="themeToggle" type="button" aria-label="Switch theme" title="Switch theme">☀</button>
+  <a id="docsBtn" href="https://andreaprozzo21.github.io/devops-wiki/" aria-label="API Documentation" title="API Docs">Docs</a>
 </header>
 
 <main>
