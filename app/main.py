@@ -15,7 +15,7 @@ from .store import CommandStore
 store: CommandStore
 
 # Global IP limit; search has a stricter ceiling (burst per second + minute).
-# With multiple workers/replicas, in-memory counters are per-process: use Redis (storage_uri) if global limits are needed.
+# With multiple workers/replicas, in-memory counters are per-process: use Redis if global limits are needed.
 BEHIND_CLOUDFLARE = os.getenv("BEHIND_CLOUDFLARE", "").lower() in {"1", "true", "yes"}
 
 
