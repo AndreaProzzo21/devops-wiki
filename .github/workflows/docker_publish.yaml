@@ -4,13 +4,14 @@ on:
   push:
     branches: [main]
     tags: ["v*"]          # le release (git tag v1.2.0) partono sempre: i filtri paths non valgono per i tag
-    paths:                # builda solo se cambia qualcosa che finisce nell'immagine
+    paths:                # builda solo se cambia qualcosa che finisce nell'immagine o nei test
       - Dockerfile
       - .dockerignore
       - requirements.txt
       - app/**
       - data/**
       - static/**
+      - tests/**          # <-- Aggiunto per triggerare la pipeline se si modificano i test
       - .github/workflows/docker-publish.yml
   pull_request:
     branches: [main]      # sulle PR si builda soltanto, senza pubblicare
@@ -21,6 +22,7 @@ on:
       - app/**
       - data/**
       - static/**
+      - tests/**          # <-- Aggiunto
       - .github/workflows/docker-publish.yml
   workflow_dispatch:      # pulsante "Run workflow" per rifare la build a mano
 
@@ -33,7 +35,33 @@ permissions:
   contents: read
 
 jobs:
+  # --- JOB 1: TEST ---
+  test:
+    name: Run API Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11" # Assicurati che sia la tua versione
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest httpx
+
+      - name: Run Test Suite
+        run: pytest -v tests/
+
+  # --- JOB 2: BUILD & PUSH ---
   docker:
+    name: Build and Push Docker Image
+    needs: test           # <-- FONDAMENTALE: aspetta che il job "test" finisca con successo
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
