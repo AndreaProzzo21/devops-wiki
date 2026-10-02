@@ -1,13 +1,21 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "DevOps Command Wiki",
-    "version": "0.1.0"
+    "title": "DevOps Command Wiki API",
+    "description": "\nCentralized API for navigating, searching, and retrieving DevOps commands, deployment scripts, and infrastructure snippets.\nProvides rate-limited search capabilities and paginated access to the command database.\n    ",
+    "contact": {
+      "name": "DevOps Team"
+    },
+    "version": "1.0.0"
   },
   "paths": {
     "/api/search": {
       "get": {
-        "summary": "Search",
+        "tags": [
+          "Search"
+        ],
+        "summary": "Search for commands",
+        "description": "Perform a rate-limited, full-text search across all commands. Results can be optionally filtered by tool and category.",
         "operationId": "search_api_search_get",
         "parameters": [
           {
@@ -17,8 +25,10 @@
             "schema": {
               "type": "string",
               "minLength": 1,
+              "description": "The search query string. Matches against command name, summary, and description.",
               "title": "Q"
-            }
+            },
+            "description": "The search query string. Matches against command name, summary, and description."
           },
           {
             "name": "tool",
@@ -33,8 +43,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Optional tool name to filter results (e.g., 'kubectl', 'docker').",
               "title": "Tool"
-            }
+            },
+            "description": "Optional tool name to filter results (e.g., 'kubectl', 'docker')."
           },
           {
             "name": "category",
@@ -49,8 +61,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Optional category name to filter results within a tool.",
               "title": "Category"
-            }
+            },
+            "description": "Optional category name to filter results within a tool."
           },
           {
             "name": "limit",
@@ -60,9 +74,11 @@
               "type": "integer",
               "maximum": 100,
               "minimum": 1,
+              "description": "Maximum number of search results to return.",
               "default": 20,
               "title": "Limit"
-            }
+            },
+            "description": "Maximum number of search results to return."
           }
         ],
         "responses": {
@@ -95,7 +111,11 @@
     },
     "/api/commands": {
       "get": {
-        "summary": "List Commands",
+        "tags": [
+          "Commands"
+        ],
+        "summary": "List all commands",
+        "description": "Retrieve a paginated list of all available commands. Can be filtered by specific tools or categories.",
         "operationId": "list_commands_api_commands_get",
         "parameters": [
           {
@@ -111,8 +131,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Filter the list by a specific tool.",
               "title": "Tool"
-            }
+            },
+            "description": "Filter the list by a specific tool."
           },
           {
             "name": "category",
@@ -127,8 +149,10 @@
                   "type": "null"
                 }
               ],
+              "description": "Filter the list by a specific category.",
               "title": "Category"
-            }
+            },
+            "description": "Filter the list by a specific category."
           },
           {
             "name": "page",
@@ -137,9 +161,11 @@
             "schema": {
               "type": "integer",
               "minimum": 1,
+              "description": "The page number to retrieve for pagination.",
               "default": 1,
               "title": "Page"
-            }
+            },
+            "description": "The page number to retrieve for pagination."
           },
           {
             "name": "limit",
@@ -149,9 +175,11 @@
               "type": "integer",
               "maximum": 100,
               "minimum": 1,
+              "description": "Number of items to return per page.",
               "default": 20,
               "title": "Limit"
-            }
+            },
+            "description": "Number of items to return per page."
           }
         ],
         "responses": {
@@ -180,7 +208,11 @@
     },
     "/api/commands/{cmd_id}": {
       "get": {
-        "summary": "Get Command",
+        "tags": [
+          "Commands"
+        ],
+        "summary": "Get command details",
+        "description": "Retrieve the full details, flags, and examples of a specific command using its unique identifier.",
         "operationId": "get_command_api_commands__cmd_id__get",
         "parameters": [
           {
@@ -189,8 +221,10 @@
             "required": true,
             "schema": {
               "type": "string",
+              "description": "The unique identifier of the command (e.g., 'kubectl-get-pods').",
               "title": "Cmd Id"
-            }
+            },
+            "description": "The unique identifier of the command (e.g., 'kubectl-get-pods')."
           }
         ],
         "responses": {
@@ -203,6 +237,9 @@
                 }
               }
             }
+          },
+          "404": {
+            "description": "Command not found"
           },
           "422": {
             "description": "Validation Error",
@@ -219,26 +256,12 @@
     },
     "/api/tools": {
       "get": {
-        "summary": "Tools",
+        "tags": [
+          "Metadata"
+        ],
+        "summary": "List available tools",
+        "description": "Retrieve a complete list of all tools documented in the wiki, including their available categories and total command counts.",
         "operationId": "tools_api_tools_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/": {
-      "get": {
-        "summary": "Serve Ui",
-        "operationId": "serve_ui__get",
         "responses": {
           "200": {
             "description": "Successful Response",
