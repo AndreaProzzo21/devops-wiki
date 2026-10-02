@@ -6,7 +6,7 @@ import yaml
 from pydantic import ValidationError
 from rapidfuzz import fuzz, process
 
-from .models import Command, CommandDetail, CommandSummary
+from .models import Command, CommandDetail, CommandPage, CommandSummary
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data" / "commands"
 
@@ -26,6 +26,8 @@ class CommandStore:
         self._load(data_dir)
         self._validate_relations()
         self._build_index()
+        # ordine stabile per la navigazione: tool, poi nome (calcolato una sola volta)
+        self._sorted = sorted(self.commands.values(), key=lambda c: (c.tool, c.name.lower()))
 
     # ---------- caricamento & validazione ----------
     def _load(self, data_dir: Path):
@@ -138,6 +140,13 @@ class CommandStore:
             t["categories"][c.category] = t["categories"].get(c.category, 0) + 1
         return sorted(out.values(), key=lambda t: t["tool"])
 
-    def list(self, tool: str | None, category: str | None) -> list[CommandSummary]:
-        return [_summary(c) for c in sorted(self.commands.values(), key=lambda c: c.name)
-                if (not tool or c.tool == tool) and (not category or c.category == category)]
+    def list(self, tool: str | None = None, category: str | None = None,
+             page: int = 1, limit: int = 20) -> CommandPage:
+        matched = [c for c in self._sorted
+                   if (not tool or c.tool == tool) and (not category or c.category == category)]
+        total = len(matched)
+        pages = max(1, -(-total // limit))          # ceil
+        page = min(max(page, 1), pages)             # clamp: mai una pagina fuori range
+        start = (page - 1) * limit
+        return CommandPage(items=[_summary(c) for c in matched[start:start + limit]],
+                           total=total, page=page, pages=pages, limit=limit)

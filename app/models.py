@@ -38,3 +38,11 @@ class CommandSummary(BaseModel):
 
 class CommandDetail(Command):
     related_commands: list[CommandSummary] = []
+
+
+class CommandPage(BaseModel):
+    items: list[CommandSummary]
+    total: int
+    page: int
+    pages: int
+    limit: int
