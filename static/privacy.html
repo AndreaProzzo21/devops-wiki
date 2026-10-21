@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy &amp; policies · DevOps Command Wiki</title>
+<meta name="description" content="How DevOps Command Wiki handles data, cookies and rate limits, plus usage terms and disclaimer.">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" type="image/png" sizes="192x192" href="/static/ico.png">
+<script>
+try{var t=localStorage.getItem('devopswiki-theme');
+if(t==='light'||(t!=='dark'&&matchMedia('(prefers-color-scheme: light)').matches))document.documentElement.classList.add('light')}catch(e){}
+</script>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--line:#262d36;--txt:#e6edf3;--mut:#8b949e;--acc:#326ce5;--warn:#f5a524;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+:root.light{--bg:#f7f3ea;--panel:#fffdf8;--line:#ded8cc;--txt:#252a31;--mut:#737981;--warn:#a96900}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--txt);font:15px/1.65 system-ui,-apple-system,Segoe UI,sans-serif}
+a{color:var(--acc)}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:4px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;border-bottom:1px solid var(--line);background:var(--panel)}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;text-decoration:none;color:var(--txt)}
+.mark{width:28px;height:28px;border-radius:8px;background:var(--acc);color:#fff;display:grid;place-items:center;font:700 12px var(--mono)}
+.logo .ac{color:var(--acc)}
+header a.back{color:var(--mut);text-decoration:none;font-size:14px}
+header a.back:hover{color:var(--acc)}
+main{max-width:760px;margin:0 auto;padding:36px 20px 56px}
+h1{margin:0 0 6px;font-size:30px;letter-spacing:-.02em}
+.meta{color:var(--mut);margin:0 0 28px;font-size:13px}
+h2{margin:34px 0 8px;font-size:18px}
+p,li{color:var(--txt)}
+li{margin:4px 0}
+.note{border:1px solid var(--warn);color:var(--warn);border-radius:8px;padding:10px 14px;margin:20px 0;font-size:14px}
+code{font:13px var(--mono);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:1px 6px}
+footer{border-top:1px solid var(--line);padding:16px 20px;text-align:center;color:var(--mut);font-size:12px}
+footer a{color:var(--mut)}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="/"><span class="mark" aria-hidden="true">&gt;_</span><span>DevOps<span class="ac">Wiki</span></span></a>
+  <a class="back" href="/">← Back to the wiki</a>
+</header>
+
+<main>
+  <h1>Privacy &amp; policies</h1>
+  <p class="meta">Last updated: 21 October 2026</p>
+
+  <p>DevOps Command Wiki is a read-only reference for command-line tools. There are no accounts, no ads and no analytics scripts run by this site. This page explains what little data is involved and the rules for using the service.</p>
+
+  <h2>1. What we process</h2>
+  <ul>
+    <li><strong>Searches and page requests.</strong> The text you type in the search box and the pages you open are sent to the server to return results.</li>
+    <li><strong>IP address.</strong> Used to apply rate limits (see section 5). The application keeps it in memory only for that purpose.</li>
+    <li><strong>Server logs.</strong> The web server and the infrastructure in front of it may record request metadata (time, path, query string, status code, network address) for operations, troubleshooting and abuse prevention, kept only for as long as needed for those purposes.</li>
+  </ul>
+  <p>We do not ask for names, emails or any other personal information to use the site, and we do not sell or share data for advertising.</p>
+
+  <h2>2. Cookies and local storage</h2>
+  <p>This site does not set cookies. It stores your light/dark theme choice in your browser's local storage (<code>devopswiki-theme</code>). That value stays on your device and is never sent to the server. You can remove it at any time by clearing the site data in your browser.</p>
+  <p>Because the site is delivered through Cloudflare, Cloudflare may set strictly necessary security cookies (for example for bot protection) as described in its own policy.</p>
+
+  <h2>3. Third parties</h2>
+  <ul>
+    <li><strong>Cloudflare</strong> provides DNS, caching, DDoS protection and the secure tunnel to the server, so it processes your requests as an intermediary. See the <a href="https://www.cloudflare.com/privacy/" rel="noopener">Cloudflare privacy policy</a>.</li>
+    <li><strong>GitHub Pages</strong> hosts the API documentation linked in the header and footer. When you open it you leave this site and the <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement" rel="noopener">GitHub privacy statement</a> applies.</li>
+  </ul>
+
+  <h2>4. Your rights</h2>
+  <p>If you are in the European Economic Area you have the right to access, rectify or erase personal data we hold about you, to restrict or object to its processing, and to lodge a complaint with your data protection authority (in Italy, the Garante per la protezione dei dati personali). Given how little data is processed, requests are usually answered by pointing to the sections above, but you are welcome to write to the contact address below. The processing described here is based on our legitimate interest in running and securing the service.</p>
+
+  <h2>5. Fair use and rate limits</h2>
+  <p>The site and its API are free to use, including from scripts, within reasonable limits. Requests are rate limited per IP address and excess requests receive an HTTP <code>429</code> response. Please do not scrape the service at high volume, probe it for vulnerabilities without permission, or try to bypass the limits. We may block abusive traffic without notice.</p>
+
+  <h2>6. Disclaimer</h2>
+  <p>Commands, flags and examples are provided for information only, <strong>as-is and without warranty of any kind</strong>. Tools change between versions, and some commands are destructive (for example deleting resources, pruning data or force-pushing). Always read the official documentation, test in a safe environment and double-check the target (cluster, namespace, account, environment) before running anything in production. We are not liable for any loss or damage resulting from the use of this content.</p>
+  <p>Product and company names mentioned (such as Kubernetes, Docker, Terraform, Helm, Git, Ansible and AWS) are trademarks of their respective owners. This site is independent and is not affiliated with or endorsed by them.</p>
+
+  <h2>7. Changes</h2>
+  <p>We may update this page when the service changes. The date at the top shows the latest revision.</p>
+
+  <h2>8. Contact</h2>
+  <!-- TODO: replace with your real contact address and, if you want, the name of the person responsible for the site -->
+  <p>Questions or requests about this page: <a href="mailto:info@flowingbot.com">info@flowingbot.com</a></p>
+
+</main>
+
+<footer>
+  <a href="/">DevOps Command Wiki</a> · <a href="https://andreaprozzo21.github.io/devops-wiki/" target="_blank" rel="noopener">API docs</a>
+</footer>
+</body>
+</html>

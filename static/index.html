@@ -3,51 +3,85 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DevOps Command Wiki</title>
+<title>DevOps Command Wiki · find the right command in seconds</title>
+<meta name="description" content="Searchable DevOps command reference with flags, real-world examples and safety warnings for kubectl, Helm, Terraform, Docker, Git, Ansible and more.">
+<meta name="color-scheme" content="dark light">
+<meta name="theme-color" content="#0d1117" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#f7f3ea" media="(prefers-color-scheme: light)">
+<meta property="og:type" content="website">
+<meta property="og:title" content="DevOps Command Wiki">
+<meta property="og:description" content="Find the right DevOps command in seconds: flags, examples and safety warnings for kubectl, Helm, Terraform, Docker, Git and more.">
 <link rel="icon" type="image/png" sizes="192x192" href="/static/ico.png">
+<script>
+/* Applica il tema prima del primo paint (evita il flash scuro per chi usa il tema chiaro) */
+try{var t=localStorage.getItem('devopswiki-theme');
+if(t==='light'||(t!=='dark'&&matchMedia('(prefers-color-scheme: light)').matches))document.documentElement.classList.add('light')}catch(e){}
+</script>
 <style>
 :root{
   --bg:#0d1117;--panel:#161b22;--panel-hover:#1c2128;--line:#262d36;--txt:#e6edf3;--mut:#8b949e;
-  --acc:#326ce5;--acc-hover:#4b7ff0;--warn:#f5a524;--bad:#f85149;--code:#010409;
+  --acc:#326ce5;--acc-hover:#4b7ff0;--acc-soft:rgba(50,108,229,.16);--warn:#f5a524;--bad:#f85149;--code:#010409;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 :root.light{
   --bg:#f7f3ea;--panel:#fffdf8;--panel-hover:#f1ece2;--line:#ded8cc;--txt:#252a31;--mut:#737981;
-  --acc:#326ce5;--acc-hover:#2459c7;--warn:#a96900;--bad:#d93636;--code:#f0ece4;
+  --acc:#326ce5;--acc-hover:#2459c7;--acc-soft:rgba(50,108,229,.10);--warn:#a96900;--bad:#d93636;--code:#f0ece4;
 }
 *{box-sizing:border-box}
 html,body{height:100%;margin:0}
 body{background:var(--bg);color:var(--txt);font:14px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;
   display:flex;flex-direction:column;transition:background .2s ease,color .2s ease}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px;border-radius:6px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.skip{position:absolute;left:-9999px;top:8px;background:var(--acc);color:#fff;padding:8px 12px;border-radius:8px;z-index:20;text-decoration:none}
+.skip:focus{left:12px}
+kbd{font:11px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--mut);background:var(--bg)}
 
-header{display:flex;gap:16px;align-items:center;padding:12px 20px;border-bottom:1px solid var(--line);
+/* ---------- Header ---------- */
+header{display:flex;gap:16px;align-items:center;padding:10px 20px;border-bottom:1px solid var(--line);
   background:var(--panel);transition:background .2s ease,border-color .2s ease}
-.logo{font-weight:700;letter-spacing:.3px;white-space:nowrap}
-.logo span{color:var(--acc)}
-#q{flex:1;max-width:640px;background:var(--bg);border:1px solid var(--line);color:var(--txt);padding:9px 12px;
-  border-radius:8px;font-size:14px;outline:none;transition:background .2s ease,border-color .2s ease,color .2s ease}
-#q:focus{border-color:var(--acc)}
+.logo{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.2px;white-space:nowrap;text-decoration:none}
+.logo .mark{width:28px;height:28px;border-radius:8px;background:var(--acc);color:#fff;display:grid;place-items:center;
+  font:700 12px var(--mono);letter-spacing:0}
+.logo .ac{color:var(--acc)}
+.search{position:relative;flex:1;max-width:640px}
+.search .sicon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--mut);pointer-events:none}
+#q{width:100%;background:var(--bg);border:1px solid var(--line);color:var(--txt);padding:9px 40px 9px 36px;
+  border-radius:10px;font-size:14px;outline:none;transition:background .2s ease,border-color .2s ease,box-shadow .2s ease}
+#q:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
 #q::placeholder{color:var(--mut)}
-#themeToggle{width:36px;height:36px;flex:none;display:flex;align-items:center;justify-content:center;
+.search .slash{position:absolute;right:10px;top:50%;transform:translateY(-50%);pointer-events:none}
+#q:focus ~ .slash,#q:not(:placeholder-shown) ~ .slash{display:none}
+.hbtns{display:flex;gap:8px;margin-left:auto}
+#themeToggle,#docsBtn{width:36px;height:36px;flex:none;display:flex;align-items:center;justify-content:center;
   background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--txt);cursor:pointer;font-size:16px;
-  transition:background .2s ease,border-color .2s ease,color .2s ease,transform .15s ease}
-#themeToggle:hover{border-color:var(--acc);color:var(--acc)}
-#themeToggle:active{transform:scale(.94)}
-#themeToggle, #docsBtn {
-  width:36px; height:36px; flex:none; display:flex; align-items:center; justify-content:center;
-  background:var(--bg); border:1px solid var(--line); border-radius:8px; color:var(--txt); 
-  cursor:pointer; font-size:16px; text-decoration:none;
-  transition:background .2s ease, border-color .2s ease, color .2s ease, transform .15s ease;
-}
-#themeToggle:hover, #docsBtn:hover {
-  border-color:var(--acc); color:var(--acc);
-}
-#themeToggle:active, #docsBtn:active {
-  transform:scale(.94);
-}
+  text-decoration:none;transition:background .2s ease,border-color .2s ease,color .2s ease,transform .15s ease}
+#themeToggle:hover,#docsBtn:hover{border-color:var(--acc);color:var(--acc)}
+#themeToggle:active,#docsBtn:active{transform:scale(.94)}
 
-/* FIX scroll: righe della griglia esplicite, altrimenti la riga "auto" cresce col contenuto
-   e le colonne non scorrono in modo indipendente. minmax(0,...) impedisce l'overflow orizzontale. */
+/* ---------- Mini hero (si chiude appena l'utente interagisce) ---------- */
+#hero{overflow:hidden;max-height:340px;border-bottom:1px solid var(--line);
+  background:radial-gradient(900px 240px at 12% -60%,var(--acc-soft),transparent 70%),var(--bg);
+  transition:max-height .3s ease,opacity .2s ease,border-color .3s ease}
+.compact #hero{max-height:0;opacity:0;visibility:hidden;border-bottom-color:transparent;
+  transition:max-height .3s ease,opacity .2s ease,visibility 0s .3s,border-color .3s ease}
+.hero-in{max-width:920px;padding:24px 20px 20px}
+.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--mut);border:1px solid var(--line);
+  background:var(--panel);border-radius:99px;padding:3px 12px}
+.eyebrow i{width:6px;height:6px;border-radius:50%;background:#3fb950;display:inline-block}
+.hero-in h1{margin:12px 0 6px;font-size:30px;line-height:1.15;letter-spacing:-.02em}
+.hero-in h1 em{font-style:normal;color:var(--acc)}
+.lead{margin:0;color:var(--mut);font-size:15px;max-width:640px}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}
+.row .lbl{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-right:2px;min-width:52px}
+.qchip,.pill{font:12.5px var(--mono);padding:5px 11px;border-radius:99px;border:1px solid var(--line);background:var(--panel);
+  color:var(--txt);cursor:pointer;transition:border-color .15s ease,color .15s ease,background .15s ease}
+.qchip:hover,.pill:hover{border-color:var(--acc);color:var(--acc);background:var(--panel-hover)}
+.pill{font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:13px}
+.pill small{color:var(--mut);margin-left:6px}
+
+/* ---------- Layout a 3 colonne ---------- */
 main{flex:1;min-height:0;display:grid;
   grid-template-columns:230px 340px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
 aside,section{overflow:auto;min-height:0}
@@ -55,7 +89,6 @@ aside{border-right:1px solid var(--line);padding:12px 8px}
 #list{border-right:1px solid var(--line);padding:10px}
 #detail{padding:24px 32px}
 
-/* Paginazione sempre visibile in fondo alla lista, senza dover scorrere */
 .pagination{position:sticky;bottom:-10px;margin:8px -10px -10px;padding:10px;background:var(--bg);
   border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
 .pagination-info{color:var(--mut);font-size:12px;text-align:center}
@@ -83,16 +116,21 @@ aside{border-right:1px solid var(--line);padding:12px 8px}
 .tag{font-size:11px;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--mut);margin-left:6px;vertical-align:middle}
 .tag.caution{color:var(--warn);border-color:var(--warn)}
 .tag.destructive{color:var(--bad);border-color:var(--bad)}
+.sk{height:62px;border-radius:8px;margin:6px 0;background:linear-gradient(90deg,var(--panel) 25%,var(--panel-hover) 37%,var(--panel) 63%);
+  background-size:400% 100%;animation:sh 1.4s ease infinite}
+@keyframes sh{0%{background-position:100% 50%}100%{background-position:0 50%}}
 
-h1{margin:0 0 4px;font-size:24px;font-family:var(--mono)}
-h2{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:28px 0 8px}
+/* ---------- Dettaglio ---------- */
+.title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+.title{margin:0 0 4px;font-size:24px;font-family:var(--mono);word-break:break-word}
+.sec{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);margin:28px 0 8px;font-weight:600}
 .sub{color:var(--mut);margin:0 0 16px}
+.ghost{background:var(--panel);color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:4px 10px;cursor:pointer;
+  font-size:12px;flex:none;transition:background .15s ease,color .15s ease,border-color .15s ease}
+.ghost:hover{color:var(--txt);border-color:var(--acc)}
 .code{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--code);border:1px solid var(--line);
   border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:13px;margin:6px 0;transition:background .2s ease,border-color .2s ease}
 .code code{white-space:pre-wrap;word-break:break-all;color:var(--acc)}
-.cp{background:var(--panel);color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:3px 10px;cursor:pointer;
-  font-size:12px;flex:none;transition:background .15s ease,color .15s ease,border-color .15s ease}
-.cp:hover{color:var(--txt);border-color:var(--acc)}
 .ex p{margin:0 0 0 2px;color:var(--mut);font-size:13px}
 table{width:100%;border-collapse:collapse}
 td{padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
@@ -102,9 +140,18 @@ td:first-child{font-family:var(--mono);color:var(--warn);white-space:nowrap;widt
   font-family:var(--mono);font-size:13px;transition:background .15s ease,border-color .15s ease}
 .chip:hover{border-color:var(--acc);background:var(--panel-hover)}
 .alert{border:1px solid var(--bad);background:#f8514914;color:var(--bad);padding:8px 12px;border-radius:8px;margin:12px 0}
+.alert.warn{border-color:var(--warn);background:#f5a52414;color:var(--warn)}
 .empty{color:var(--mut);padding:40px 10px;text-align:center}
+.empty .ic{font-size:28px;margin-bottom:6px;opacity:.7}
+.empty .hint{font-size:12px;margin-top:10px}
 
-/* Tablet/mobile: la nav diventa una barra orizzontale scorrevole (prima era display:none, quindi inutilizzabile) */
+/* ---------- Footer ---------- */
+footer{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 20px;
+  border-top:1px solid var(--line);background:var(--panel);color:var(--mut);font-size:12px}
+footer nav{display:flex;gap:16px}
+footer a{color:var(--mut);text-decoration:none}
+footer a:hover{color:var(--acc)}
+
 @media(max-width:900px){
   main{grid-template-columns:minmax(0,1fr);grid-template-rows:auto auto minmax(0,1fr)}
   aside{display:flex;gap:6px;overflow-x:auto;overflow-y:hidden;border-right:0;border-bottom:1px solid var(--line);padding:8px 10px}
@@ -112,29 +159,76 @@ td:first-child{font-family:var(--mono);color:var(--warn);white-space:nowrap;widt
   .cat{padding-left:10px}
   #list{max-height:40vh;border-right:0;border-bottom:1px solid var(--line)}
   #detail{padding:16px}
+  .hero-in{padding:16px 14px 14px}
+  .hero-in h1{font-size:24px}
 }
 @media(max-width:600px){
   header{gap:10px;padding:10px 12px}
-  .logo{font-size:13px}
-  #q{min-width:0}
-  #themeToggle{width:34px;height:34px}
+  .logo .name{display:none}
+  .search .slash{display:none}
+  .row.browse{display:none}
+  .qchip:nth-of-type(n+5){display:none}
+  footer{padding:8px 14px}
+  footer .disc{display:none}
+  #themeToggle,#docsBtn{width:34px;height:34px}
 }
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
+<a class="skip" href="#detail">Skip to content</a>
 
 <header>
-  <div class="logo">DevOps<span>Wiki</span></div>
-  <input id="q" placeholder="Search for a command, a flag or an issue…  (e.g. rollback, pod log, --atomic)" autocomplete="off">
-  <button id="themeToggle" type="button" aria-label="Switch theme" title="Switch theme">☀</button>
-  <a id="docsBtn" href="https://andreaprozzo21.github.io/devops-wiki/" aria-label="API Documentation" title="API Docs">‹/›</a>
+  <a class="logo" href="/" aria-label="DevOps Wiki, home">
+    <span class="mark" aria-hidden="true">&gt;_</span>
+    <span class="name">DevOps<span class="ac">Wiki</span></span>
+  </a>
+  <div class="search" role="search">
+    <svg class="sicon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <input id="q" type="text" inputmode="search" enterkeyhint="search" spellcheck="false" autocomplete="off"
+      aria-label="Search commands" placeholder="Search a command, a flag or a problem…  (e.g. rollback, pod log, --atomic)">
+    <kbd class="slash" aria-hidden="true">/</kbd>
+  </div>
+  <div class="hbtns">
+    <button id="themeToggle" type="button" aria-label="Switch theme" title="Switch theme">☀</button>
+  </div>
 </header>
 
+<section id="hero" aria-label="Introduction">
+  <div class="hero-in">
+    <span class="eyebrow"><i></i><span id="heroStats">DevOps command reference</span></span>
+    <h1>Find the right command <em>in seconds.</em></h1>
+    <p class="lead">Searchable flags, real-world examples and safety warnings for the tools you use every day.</p>
+    <div class="row" id="tryRow">
+      <span class="lbl">Try</span>
+      <button type="button" class="qchip" data-q="rollback deployment">rollback deployment</button>
+      <button type="button" class="qchip" data-q="pod keeps restarting">pod keeps restarting</button>
+      <button type="button" class="qchip" data-q="git undo commit">git undo commit</button>
+      <button type="button" class="qchip" data-q="terraform state lock">terraform state lock</button>
+      <button type="button" class="qchip" data-q="no space left">no space left</button>
+    </div>
+    <div class="row browse"><span class="lbl">Browse</span><span id="toolPills" style="display:contents"></span></div>
+  </div>
+</section>
+
 <main>
-  <aside id="nav"></aside>
-  <section id="list"></section>
-  <section id="detail"><div class="empty">Select a command to view its details.</div></section>
+  <aside id="nav" aria-label="Tools and categories"></aside>
+  <section id="list" aria-label="Commands"><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div></section>
+  <section id="detail" aria-label="Command details">
+    <div class="empty"><div class="ic">⌘</div>Select a command to see its syntax, flags and examples.
+      <div class="hint"><kbd>/</kbd> search &nbsp;·&nbsp; <kbd>Esc</kbd> clear</div></div>
+    <noscript><div class="empty">DevOps Wiki needs JavaScript to search and browse commands.</div></noscript>
+  </section>
 </main>
+<div id="status" class="sr" role="status" aria-live="polite"></div>
+
+<footer>
+  <span class="disc">Commands are provided as-is. Always review before running them in production.</span>
+  <nav aria-label="Footer">
+    <a href="/privacy">Privacy &amp; policies</a>
+    <a href="https://andreaprozzo21.github.io/devops-wiki/" target="_blank" rel="noopener">API docs</a>
+  </nav>
+</footer>
 
 <script>
 const $=s=>document.querySelector(s);
@@ -142,6 +236,13 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 
 const PAGE_SIZE=20, SEARCH_LIMIT=50;
 let tools=[], sel={tool:null,cat:null}, cur=null, page=1, timer, reqId=0;
+
+const setStatus=t=>{$('#status').textContent=t};
+
+/* L'hero resta finché l'utente non cerca, filtra o apre un comando */
+function updateChrome(){
+  document.body.classList.toggle('compact',!!($('#q').value.trim()||sel.tool||sel.cat||cur));
+}
 
 /* ---------------- Theme ---------------- */
 function setTheme(theme){
@@ -167,17 +268,24 @@ async function get(u){
   return r.json();
 }
 
-/* ---------------- Nav ---------------- */
+/* ---------------- Nav + hero pills ---------------- */
 function renderNav(){
+  const on=b=>b?' on" aria-current="true':'';
   $('#nav').innerHTML=
-    `<button class="nav ${!sel.tool?'on':''}" data-t="">All commands</button>`+
+    `<button class="nav${on(!sel.tool)}" data-t="">All commands</button>`+
     tools.map(t=>
-      `<button class="nav ${sel.tool===t.tool&&!sel.cat?'on':''}" data-t="${esc(t.tool)}">
+      `<button class="nav${on(sel.tool===t.tool&&!sel.cat)}" data-t="${esc(t.tool)}">
          <span>${esc(t.tool)}</span><small>${t.count}</small></button>`+
       (sel.tool===t.tool?Object.entries(t.categories).map(([c,n])=>
-        `<button class="nav cat ${sel.cat===c?'on':''}" data-t="${esc(t.tool)}" data-c="${esc(c)}">
+        `<button class="nav cat${on(sel.cat===c)}" data-t="${esc(t.tool)}" data-c="${esc(c)}">
            <span>${esc(c)}</span><small>${n}</small></button>`).join(''):'')
     ).join('');
+}
+function renderHero(){
+  $('#toolPills').innerHTML=tools.map(t=>
+    `<button type="button" class="pill" data-tool="${esc(t.tool)}">${esc(t.tool)}<small>${t.count}</small></button>`).join('');
+  const total=tools.reduce((s,t)=>s+t.count,0);
+  $('#heroStats').textContent=`${total} commands · ${tools.length} tools`;
 }
 
 /* ---------------- List + pagination ---------------- */
@@ -197,7 +305,7 @@ function paginationHtml(d){
 
 function renderList(items,footer,emptyMsg){
   $('#list').innerHTML=(items.length?items.map(c=>
-    `<div class="card ${cur===c.id?'on':''}" data-id="${esc(c.id)}">
+    `<div class="card ${cur===c.id?'on':''}" data-id="${esc(c.id)}" role="button" tabindex="0">
        <b>${esc(c.name)}</b>${c.danger!=='none'?`<span class="tag ${c.danger}">${c.danger==='destructive'?'destructive':'warning'}</span>`:''}
        <span class="tag">${esc(c.tool)}</span>
        <p>${esc(c.summary)}</p></div>`).join('')
@@ -214,14 +322,17 @@ async function refresh(toTop){
       p.set('q',q);p.set('limit',SEARCH_LIMIT);
       const items=await get('/api/search?'+p);
       if(id!==reqId)return;
-      renderList(items,`<div class="pagination"><div class="pagination-info">${items.length} result${items.length===1?'':'s'}${items.length===SEARCH_LIMIT?' (top '+SEARCH_LIMIT+')':''}</div></div>`,
-        'No results found for “'+esc(q)+'”.');
+      const n=items.length, msg=`${n} result${n===1?'':'s'}${n===SEARCH_LIMIT?' (top '+SEARCH_LIMIT+')':''}`;
+      renderList(items,`<div class="pagination"><div class="pagination-info">${msg}</div></div>`,
+        'No results found for “'+esc(q)+'”. Try fewer words or a tool name.');
+      setStatus(msg);
     }else{
       p.set('page',page);p.set('limit',PAGE_SIZE);
       const d=await get('/api/commands?'+p);
       if(id!==reqId)return;
       page=d.page;                         // il server fa il clamp della pagina
       renderList(d.items,paginationHtml(d));
+      setStatus(`${d.total} commands, page ${d.page} of ${d.pages}`);
     }
     if(toTop)$('#list').scrollTop=0;      // dopo il render, non prima
   }catch(e){
@@ -231,20 +342,21 @@ async function refresh(toTop){
 
 /* ---------------- Detail ---------------- */
 async function show(id){
-  cur=id;location.hash=id;
+  cur=id;location.hash=id;updateChrome();
   try{
     const c=await get('/api/commands/'+encodeURIComponent(id));
-    const code=t=>`<div class="code"><code>${esc(t)}</code><button class="cp" data-copy="${esc(t)}">Copy</button></div>`;
+    const code=t=>`<div class="code"><code>${esc(t)}</code><button class="ghost cp" type="button" data-copy="${esc(t)}">Copy</button></div>`;
     $('#detail').innerHTML=
-      `<h1>${esc(c.name)}</h1>
-       <p class="sub"><span class="tag">${esc(c.tool)}</span><span class="tag">${esc(c.category)}</span>${c.danger!=='none'?`<span class="tag ${c.danger}">${c.danger}</span>`:''}</p>
+      `<div class="title-row"><h2 class="title">${esc(c.name)}</h2><button class="ghost cplink" type="button">Copy link</button></div>
+       <p class="sub"><span class="tag" style="margin-left:0">${esc(c.tool)}</span><span class="tag">${esc(c.category)}</span>${c.danger!=='none'?`<span class="tag ${c.danger}">${c.danger}</span>`:''}</p>
        <p>${esc(c.summary)}</p>
        ${c.description?`<p class="sub">${esc(c.description)}</p>`:''}
-       ${c.danger==='destructive'?'<div class="alert">Destructive command: verify context and namespace/environment before executing.</div>':''}
-       <h2>Syntax</h2>${code(c.syntax)}
-       ${c.flags.length?`<h2>Flags</h2><table>${c.flags.map(f=>`<tr><td>${esc(f.flag)}</td><td>${esc(f.description)}</td></tr>`).join('')}</table>`:''}
-       ${c.examples.length?`<h2>Examples</h2>${c.examples.map(e=>`<div class="ex">${code(e.cmd)}<p>${esc(e.description)}</p></div>`).join('')}`:''}
-       ${c.related_commands.length?`<h2>Related commands</h2><div class="chips">${c.related_commands.map(r=>`<span class="chip" data-id="${esc(r.id)}">${esc(r.name)}</span>`).join('')}</div>`:''}`;
+       ${c.danger==='destructive'?'<div class="alert">Destructive command: verify context and namespace/environment before executing.</div>'
+        :c.danger==='caution'?'<div class="alert warn">Changes state: double-check the target before running it.</div>':''}
+       <h3 class="sec">Syntax</h3>${code(c.syntax)}
+       ${c.flags.length?`<h3 class="sec">Flags</h3><table>${c.flags.map(f=>`<tr><td>${esc(f.flag)}</td><td>${esc(f.description)}</td></tr>`).join('')}</table>`:''}
+       ${c.examples.length?`<h3 class="sec">Examples</h3>${c.examples.map(e=>`<div class="ex">${code(e.cmd)}<p>${esc(e.description)}</p></div>`).join('')}`:''}
+       ${c.related_commands.length?`<h3 class="sec">Related commands</h3><div class="chips">${c.related_commands.map(r=>`<span class="chip" data-id="${esc(r.id)}" role="button" tabindex="0">${esc(r.name)}</span>`).join('')}</div>`:''}`;
     $('#detail').scrollTop=0;
     document.querySelectorAll('.card').forEach(e=>e.classList.toggle('on',e.dataset.id===id));
   }catch(e){
@@ -263,22 +375,27 @@ async function copyText(t){
     ta.remove();
   }
 }
+function flash(btn,label){const o=btn.textContent;btn.textContent=label;setTimeout(()=>btn.textContent=o,1200)}
 
 /* ---------------- Events ---------------- */
 document.addEventListener('click',e=>{
-  // FIX: questo ramo mancava, per questo la nav non rispondeva
   const n=e.target.closest('.nav');
   if(n){
     sel={tool:n.dataset.t||null,cat:n.dataset.c||null};
-    page=1;                               // ogni cambio filtro riparte da pagina 1
-    renderNav();refresh(true);return;
+    page=1;renderNav();updateChrome();refresh(true);return;
   }
+  const pl=e.target.closest('.pill');
+  if(pl){sel={tool:pl.dataset.tool,cat:null};page=1;renderNav();updateChrome();refresh(true);return}
+  const qc=e.target.closest('.qchip');
+  if(qc){$('#q').value=qc.dataset.q;page=1;updateChrome();refresh(true);return}
   const pb=e.target.closest('.page-btn');
   if(pb){if(!pb.disabled){page=parseInt(pb.dataset.page,10);refresh(true)}return}
   const i=e.target.closest('[data-id]');
   if(i){show(i.dataset.id);return}
+  const cl=e.target.closest('.cplink');
+  if(cl){copyText(location.href);flash(cl,'Link copied ✓');return}
   const c=e.target.closest('.cp');
-  if(c){copyText(c.dataset.copy);c.textContent='Copied ✓';setTimeout(()=>c.textContent='Copy',1200)}
+  if(c){copyText(c.dataset.copy);flash(c,'Copied ✓')}
 });
 
 $('#themeToggle').addEventListener('click',()=>
@@ -286,12 +403,15 @@ $('#themeToggle').addEventListener('click',()=>
 
 $('#q').addEventListener('input',()=>{
   clearTimeout(timer);
-  page=1;                                  // nuova ricerca/svuotamento: pagina 1
+  page=1;updateChrome();                   // nuova ricerca/svuotamento: pagina 1
   timer=setTimeout(()=>refresh(true),250);
 });
 
 document.addEventListener('keydown',e=>{
-  if(e.key==='/'&&document.activeElement!==$('#q')){e.preventDefault();$('#q').focus()}
+  const q=$('#q');
+  if(e.key==='/'&&document.activeElement!==q){e.preventDefault();q.focus();return}
+  if(e.key==='Escape'&&document.activeElement===q&&q.value){q.value='';page=1;updateChrome();refresh(true);return}
+  if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('.card,.chip')){e.preventDefault();e.target.click()}
 });
 
 /* ---------------- Init ---------------- */
@@ -299,7 +419,7 @@ document.addEventListener('keydown',e=>{
   initTheme();
   try{
     tools=await get('/api/tools');
-    renderNav();
+    renderNav();renderHero();
     await refresh();
     if(location.hash.length>1)show(decodeURIComponent(location.hash.slice(1)));
   }catch(e){
