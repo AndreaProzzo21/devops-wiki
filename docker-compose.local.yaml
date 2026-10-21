@@ -1,0 +1,15 @@
+# Test locale: costruisce l'immagine dal codice corrente (stesso Dockerfile della pipeline).
+# Uso:  docker compose -f docker-compose.local.yaml up --build
+services:
+  devops-wiki:
+    build: .
+    image: devops-wiki:local
+    container_name: devops-wiki-local
+    restart: "no"
+    ports:
+      - "127.0.0.1:8000:8000"        
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
