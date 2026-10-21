@@ -140,3 +140,9 @@ def serve_ui():
     Hidden from the OpenAPI schema (include_in_schema=False) to keep the API documentation clean.
     """
     return FileResponse("static/index.html")
+
+
+@app.get("/privacy", include_in_schema=False)
+def serve_privacy():
+    """Privacy & policies page (static HTML)."""
+    return FileResponse("static/privacy.html")
