@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>DevOps Wiki - API Documentation</title>
 
-<!-- Favicon con cache-busting (cambia ?v=2 se modifichi immagine) -->
+<!-- Favicon con cache-busting -->
 <link rel="icon" type="image/png" sizes="192x192" href="ico.png?v=2">
 
 <style>
@@ -64,7 +64,8 @@ header {
 .redoc-container {
   background: #ffffff; border-radius: 12px; overflow: hidden;
   box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-  display: block; position: relative;
+  min-height: 500px;
+  position: relative;
 }
 :root.light .redoc-container { border: 1px solid var(--line); box-shadow: none; }
 </style>
@@ -93,14 +94,12 @@ header {
   </section>
 
   <section class="redoc-wrapper">
-    <div class="redoc-container" id="redoc-container">
-      <!-- ReDoc verrà iniettato qui -->
-    </div>
+    <div class="redoc-container" id="redoc-container"></div>
   </section>
 </main>
 
-<!-- ReDoc Standalone Bundle -->
-<script src="https://cdn.redoc.ly/redoc/latest/bundles/redoc.standalone.js"></script>
+<!-- ReDoc Standalone Bundle (versione stabile v2.1.3 per evitare bug su import.meta) -->
+<script src="https://cdn.redoc.ly/redoc/v2.1.3/bundles/redoc.standalone.js"></script>
 <script>
   /* --- Theme Logic --- */
   function setTheme(theme) {
@@ -121,11 +120,29 @@ header {
     setTheme(document.documentElement.classList.contains('light') ? 'dark' : 'light');
   });
 
-  /* --- Init --- */
+  /* --- Init ReDoc --- */
   window.onload = () => {
     initTheme();
-    // Inizializza ReDoc puntando al file openapi.json
-    Redoc.init('./openapi.json', {}, document.getElementById('redoc-container'));
+    
+    try {
+      Redoc.init(
+        './openapi.json', 
+        {
+          scrollYOffset: 50,
+          theme: { colors: { primary: { main: '#326ce5' } } }
+        }, 
+        document.getElementById('redoc-container'),
+        function(err) {
+          if (err) {
+            console.error("Errore durante il caricamento di ReDoc:", err);
+            document.getElementById('redoc-container').innerHTML = 
+              '<div style="padding: 40px; color: #f85149; text-align: center;">Impossibile caricare la documentazione. Verifica che il file <code>openapi.json</code> esista e sia formattato correttamente.</div>';
+          }
+        }
+      );
+    } catch (e) {
+      console.error("Errore critico:", e);
+    }
   };
 </script>
 </body>
