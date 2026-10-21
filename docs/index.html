@@ -58,7 +58,6 @@ header {
 .btn-secondary:hover { border-color: var(--acc); background: var(--panel-hover); }
 
 /* ReDoc Container */
-/* ReDoc defaults to a light theme. We wrap it in a white container to make it pop elegantly on the dark/light background. */
 .redoc-wrapper {
   max-width: 1400px; margin: 40px auto; padding: 0 20px; width: 100%; flex: 1;
 }
@@ -94,8 +93,8 @@ header {
   </section>
 
   <section class="redoc-wrapper">
-    <div class="redoc-container">
-      <redoc spec-url="./openapi.json"></redoc>
+    <div class="redoc-container" id="redoc-container">
+      <!-- ReDoc verrà iniettato qui -->
     </div>
   </section>
 </main>
@@ -125,6 +124,8 @@ header {
   /* --- Init --- */
   window.onload = () => {
     initTheme();
+    // Inizializza ReDoc puntando al file openapi.json
+    Redoc.init('./openapi.json', {}, document.getElementById('redoc-container'));
   };
 </script>
 </body>
