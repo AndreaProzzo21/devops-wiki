@@ -13,9 +13,11 @@
 <meta property="og:description" content="Find the right DevOps command in seconds: flags, examples and safety warnings for kubectl, Helm, Terraform, Docker, Git and more.">
 <link rel="icon" type="image/png" sizes="192x192" href="/static/ico.png">
 <script>
-/* Applica il tema prima del primo paint (evita il flash scuro per chi usa il tema chiaro) */
+/* Applica tema e vista iniziale prima del primo paint (evita flash).
+   Nessun hash = Home; qualunque hash (#/search oppure #<id comando>) = pagina comandi. */
 try{var t=localStorage.getItem('devopswiki-theme');
 if(t==='light'||(t!=='dark'&&matchMedia('(prefers-color-scheme: light)').matches))document.documentElement.classList.add('light')}catch(e){}
+if(location.hash.length<2)document.documentElement.classList.add('is-home');
 </script>
 <style>
 :root{
@@ -37,6 +39,11 @@ a{color:inherit}
 .skip{position:absolute;left:-9999px;top:8px;background:var(--acc);color:#fff;padding:8px 12px;border-radius:8px;z-index:20;text-decoration:none}
 .skip:focus{left:12px}
 kbd{font:11px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--mut);background:var(--bg)}
+
+/* ---------- Vista Home / Vista comandi ---------- */
+.is-home main{display:none}
+html:not(.is-home) #home{display:none}
+.is-home header .search{display:none}
 
 /* ---------- Header ---------- */
 header{display:flex;gap:16px;align-items:center;padding:10px 20px;border-bottom:1px solid var(--line);
@@ -60,28 +67,53 @@ header{display:flex;gap:16px;align-items:center;padding:10px 20px;border-bottom:
 #themeToggle:hover,#docsBtn:hover{border-color:var(--acc);color:var(--acc)}
 #themeToggle:active,#docsBtn:active{transform:scale(.94)}
 
-/* ---------- Mini hero (si chiude appena l'utente interagisce) ---------- */
-#hero{overflow:hidden;max-height:340px;border-bottom:1px solid var(--line);
-  background:radial-gradient(900px 240px at 12% -60%,var(--acc-soft),transparent 70%),var(--bg);
-  transition:max-height .3s ease,opacity .2s ease,border-color .3s ease}
-.compact #hero{max-height:0;opacity:0;visibility:hidden;border-bottom-color:transparent;
-  transition:max-height .3s ease,opacity .2s ease,visibility 0s .3s,border-color .3s ease}
-.hero-in{max-width:920px;padding:24px 20px 20px}
+/* ---------- Home ---------- */
+#home{flex:1;min-height:0;overflow:auto}
+.hero{border-bottom:1px solid var(--line);
+  background:radial-gradient(1100px 380px at 50% -40%,var(--acc-soft),transparent 70%),var(--bg)}
+.hero-in{max-width:860px;margin:0 auto;padding:clamp(40px,9vh,96px) 24px clamp(36px,7vh,72px);text-align:center}
 .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--mut);border:1px solid var(--line);
   background:var(--panel);border-radius:99px;padding:3px 12px}
 .eyebrow i{width:6px;height:6px;border-radius:50%;background:#3fb950;display:inline-block}
-.hero-in h1{margin:12px 0 6px;font-size:30px;line-height:1.15;letter-spacing:-.02em}
+.hero-in h1{margin:18px 0 12px;font-size:clamp(34px,6vw,58px);line-height:1.08;letter-spacing:-.03em}
 .hero-in h1 em{font-style:normal;color:var(--acc)}
-.lead{margin:0;color:var(--mut);font-size:15px;max-width:640px}
-.row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}
-.row .lbl{color:var(--mut);font-size:11px;text-transform:uppercase;letter-spacing:1px;margin-right:2px;min-width:52px}
+.lead{margin:0 auto;color:var(--mut);font-size:clamp(15px,2vw,18px);max-width:600px}
+
+.bigsearch{position:relative;max-width:640px;margin:28px auto 0;display:flex;gap:8px}
+.bigsearch .sicon{position:absolute;left:16px;top:50%;transform:translateY(-50%);color:var(--mut);pointer-events:none}
+#hq{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);color:var(--txt);padding:14px 16px 14px 44px;
+  border-radius:12px;font-size:16px;outline:none;transition:background .2s ease,border-color .2s ease,box-shadow .2s ease}
+#hq:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
+#hq::placeholder{color:var(--mut)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:12px;font:600 14px system-ui,-apple-system,Segoe UI,sans-serif;
+  padding:0 20px;height:50px;cursor:pointer;border:1px solid var(--acc);background:var(--acc);color:#fff;text-decoration:none;
+  transition:background .15s ease,border-color .15s ease,transform .15s ease}
+.btn:hover{background:var(--acc-hover);border-color:var(--acc-hover)}
+.btn:active{transform:scale(.97)}
+.btn.alt{background:var(--panel);color:var(--txt);border-color:var(--line)}
+.btn.alt:hover{border-color:var(--acc);color:var(--acc);background:var(--panel-hover)}
+
+.row{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px;margin-top:16px}
+.row .lbl{color:var(--mut);font-size:13px;margin-right:2px}
 .qchip,.pill{font:12.5px var(--mono);padding:5px 11px;border-radius:99px;border:1px solid var(--line);background:var(--panel);
   color:var(--txt);cursor:pointer;transition:border-color .15s ease,color .15s ease,background .15s ease}
 .qchip:hover,.pill:hover{border-color:var(--acc);color:var(--acc);background:var(--panel-hover)}
 .pill{font-family:system-ui,-apple-system,Segoe UI,sans-serif;font-size:13px}
 .pill small{color:var(--mut);margin-left:6px}
+.browse-cta{margin-top:28px;display:flex;justify-content:center}
 
-/* ---------- Layout a 3 colonne ---------- */
+.home-sec{max-width:980px;margin:0 auto;padding:40px 24px 8px}
+.home-sec h2{margin:0 0 14px;font-size:18px;letter-spacing:-.01em}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.info{padding:16px 18px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+.info h3{margin:0 0 4px;font-size:15px}
+.info p{margin:0;color:var(--mut);font-size:13.5px}
+a.info{display:block;text-decoration:none;transition:border-color .15s ease,background .15s ease}
+a.info:hover{border-color:var(--acc);background:var(--panel-hover)}
+a.info h3{color:var(--acc)}
+.home-end{height:32px}
+
+/* ---------- Layout a 3 colonne (pagina comandi) ---------- */
 main{flex:1;min-height:0;display:grid;
   grid-template-columns:230px 340px minmax(0,1fr);grid-template-rows:minmax(0,1fr)}
 aside,section{overflow:auto;min-height:0}
@@ -159,15 +191,17 @@ footer a:hover{color:var(--acc)}
   .cat{padding-left:10px}
   #list{max-height:40vh;border-right:0;border-bottom:1px solid var(--line)}
   #detail{padding:16px}
-  .hero-in{padding:16px 14px 14px}
-  .hero-in h1{font-size:24px}
 }
 @media(max-width:600px){
   header{gap:10px;padding:10px 12px}
   .logo .name{display:none}
   .search .slash{display:none}
-  .row.browse{display:none}
+  .hero-in{padding-left:16px;padding-right:16px}
+  .bigsearch{flex-direction:column}
+  .bigsearch .btn{height:46px}
+  .browse-pills{display:none}
   .qchip:nth-of-type(n+5){display:none}
+  .home-sec{padding:32px 16px 8px}
   footer{padding:8px 14px}
   footer .disc{display:none}
   #themeToggle,#docsBtn{width:34px;height:34px}
@@ -176,10 +210,10 @@ footer a:hover{color:var(--acc)}
 </style>
 </head>
 <body>
-<a class="skip" href="#detail">Skip to content</a>
+<a class="skip" href="#detail" id="skip">Skip to content</a>
 
 <header>
-  <a class="logo" href="/" aria-label="DevOps Wiki, home">
+  <a class="logo" id="logo" href="/" aria-label="DevOps Wiki, home">
     <span class="mark" aria-hidden="true">&gt;_</span>
     <span class="name">DevOps<span class="ac">Wiki</span></span>
   </a>
@@ -194,23 +228,58 @@ footer a:hover{color:var(--acc)}
   </div>
 </header>
 
-<section id="hero" aria-label="Introduction">
-  <div class="hero-in">
-    <span class="eyebrow"><i></i><span id="heroStats">DevOps command reference</span></span>
-    <h1>Find the right command <em>in seconds.</em></h1>
-    <p class="lead">Searchable flags, real-world examples and safety warnings for the tools you use every day.</p>
-    <div class="row" id="tryRow">
-      <span class="lbl">Try</span>
-      <button type="button" class="qchip" data-q="rollback deployment">rollback deployment</button>
-      <button type="button" class="qchip" data-q="pod keeps restarting">pod keeps restarting</button>
-      <button type="button" class="qchip" data-q="git undo commit">git undo commit</button>
-      <button type="button" class="qchip" data-q="terraform state lock">terraform state lock</button>
-      <button type="button" class="qchip" data-q="no space left">no space left</button>
-    </div>
-    <div class="row browse"><span class="lbl">Browse</span><span id="toolPills" style="display:contents"></span></div>
-  </div>
-</section>
+<!-- ======================= HOME ======================= -->
+<div id="home">
+  <section class="hero" aria-label="Introduction">
+    <div class="hero-in">
+      <span class="eyebrow"><i></i><span id="heroStats">DevOps command reference</span></span>
+      <h1>Find the right command <em>in seconds.</em></h1>
+      <p class="lead">Searchable flags, real-world examples and safety warnings for the tools you use every day.</p>
 
+      <form class="bigsearch" id="heroSearch" role="search">
+        <svg class="sicon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="hq" type="text" inputmode="search" enterkeyhint="search" spellcheck="false" autocomplete="off"
+          aria-label="Search commands" placeholder="Search a command, a flag or a problem…">
+        <button class="btn" type="submit">Search</button>
+      </form>
+
+      <div class="row" id="tryRow">
+        <span class="lbl">Try</span>
+        <button type="button" class="qchip" data-q="rollback deployment">rollback deployment</button>
+        <button type="button" class="qchip" data-q="pod keeps restarting">pod keeps restarting</button>
+        <button type="button" class="qchip" data-q="git undo commit">git undo commit</button>
+        <button type="button" class="qchip" data-q="terraform state lock">terraform state lock</button>
+        <button type="button" class="qchip" data-q="no space left">no space left</button>
+      </div>
+
+      <div class="browse-cta">
+        <button type="button" class="btn alt" id="browseBtn">Browse all commands</button>
+      </div>
+      <div class="row browse-pills"><span class="lbl">By tool</span><span id="toolPills" style="display:contents"></span></div>
+    </div>
+  </section>
+
+  <section class="home-sec" aria-label="What you get">
+    <h2>What you get</h2>
+    <div class="grid">
+      <div class="info"><h3>Search by problem</h3><p>Describe what went wrong, such as “no space left”, and get the commands that fix it.</p></div>
+      <div class="info"><h3>Flags and real examples</h3><p>Every command lists its main flags and copy-ready examples you can adapt.</p></div>
+      <div class="info"><h3>Safety warnings</h3><p>Destructive and state-changing commands are flagged before you run them.</p></div>
+    </div>
+  </section>
+
+  <section class="home-sec" aria-label="Resources">
+    <h2>Resources</h2>
+    <div class="grid">
+      <a class="info" href="https://andreaprozzo21.github.io/devops-wiki/" target="_blank" rel="noopener"><h3>API documentation</h3><p>Use the same data from your own scripts and tools.</p></a>
+      <a class="info" href="https://github.com/andreaprozzo21/devops-wiki" target="_blank" rel="noopener"><h3>GitHub</h3><p>Browse the source, report an issue or suggest a command.</p></a>
+      <a class="info" href="/privacy"><h3>Privacy and policies</h3><p>How the site handles your data.</p></a>
+    </div>
+  </section>
+  <div class="home-end"></div>
+</div>
+
+<!-- ======================= PAGINA COMANDI ======================= -->
 <main>
   <aside id="nav" aria-label="Tools and categories"></aside>
   <section id="list" aria-label="Commands"><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div></section>
@@ -233,21 +302,58 @@ footer a:hover{color:var(--acc)}
 <script>
 const $=s=>document.querySelector(s);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const root=document.documentElement;
 
 const PAGE_SIZE=20, SEARCH_LIMIT=50;
-let tools=[], sel={tool:null,cat:null}, cur=null, page=1, timer, reqId=0;
+let tools=[], sel={tool:null,cat:null}, cur=null, page=1, timer, reqId=0, lastRoute=null;
+const EMPTY_DETAIL=$('#detail').innerHTML;
 
 const setStatus=t=>{$('#status').textContent=t};
+const isHome=()=>root.classList.contains('is-home');
 
-/* L'hero resta finché l'utente non cerca, filtra o apre un comando */
-function updateChrome(){
-  document.body.classList.toggle('compact',!!($('#q').value.trim()||sel.tool||sel.cat||cur));
+/* ---------------- Viste e routing ----------------
+   (nessun hash)   -> Home
+   #/search        -> pagina comandi, nessun comando aperto
+   #<id comando>   -> pagina comandi con il comando aperto (link esistenti invariati) */
+function setView(v){
+  root.classList.toggle('is-home',v==='home');
+  $('#skip').setAttribute('href',v==='home'?'#home':'#detail');
+  if(v==='home')$('#home').scrollTop=0;
+}
+function resetDetail(){
+  cur=null;
+  $('#detail').innerHTML=EMPTY_DETAIL;
+  document.querySelectorAll('.card.on').forEach(e=>e.classList.remove('on'));
+}
+function goHome(){
+  if(isHome()){$('#home').scrollTop=0;return}
+  history.pushState(null,'',location.pathname+location.search);
+  lastRoute='';
+  setView('home');
+}
+function openExplorer({q='',tool=null}={}){
+  sel={tool,cat:null};page=1;
+  $('#q').value=q;
+  resetDetail();
+  lastRoute='/search';
+  history.pushState(null,'',location.pathname+location.search+'#/search');
+  setView('explorer');
+  renderNav();refresh(true);
+}
+function route(){
+  let h='';try{h=decodeURIComponent(location.hash.slice(1))}catch{h=location.hash.slice(1)}
+  if(h===lastRoute)return;
+  lastRoute=h;
+  if(!h){setView('home');return}
+  setView('explorer');
+  if(h.startsWith('/')){if(cur)resetDetail();return}
+  show(h);
 }
 
 /* ---------------- Theme ---------------- */
 function setTheme(theme){
   const light=theme==='light';
-  document.documentElement.classList.toggle('light',light);
+  root.classList.toggle('light',light);
   const b=$('#themeToggle');
   b.textContent=light?'☾':'☀';
   b.setAttribute('aria-label',light?'Switch to dark mode':'Switch to light mode');
@@ -268,7 +374,7 @@ async function get(u){
   return r.json();
 }
 
-/* ---------------- Nav + hero pills ---------------- */
+/* ---------------- Nav + home pills ---------------- */
 function renderNav(){
   const on=b=>b?' on" aria-current="true':'';
   $('#nav').innerHTML=
@@ -342,9 +448,11 @@ async function refresh(toTop){
 
 /* ---------------- Detail ---------------- */
 async function show(id){
-  cur=id;location.hash=id;updateChrome();
+  cur=id;lastRoute=id;
+  if(decodeURIComponent(location.hash.slice(1))!==id)location.hash=id;
   try{
     const c=await get('/api/commands/'+encodeURIComponent(id));
+    if(cur!==id)return;                    // l'utente ha cambiato nel frattempo
     const code=t=>`<div class="code"><code>${esc(t)}</code><button class="ghost cp" type="button" data-copy="${esc(t)}">Copy</button></div>`;
     $('#detail').innerHTML=
       `<div class="title-row"><h2 class="title">${esc(c.name)}</h2><button class="ghost cplink" type="button">Copy link</button></div>
@@ -379,15 +487,24 @@ function flash(btn,label){const o=btn.textContent;btn.textContent=label;setTimeo
 
 /* ---------------- Events ---------------- */
 document.addEventListener('click',e=>{
+  /* Logo -> Home (Ctrl/Cmd+click apre comunque la root in una nuova scheda) */
+  const lg=e.target.closest('#logo');
+  if(lg){
+    if(e.metaKey||e.ctrlKey||e.shiftKey||e.button===1)return;
+    e.preventDefault();goHome();return;
+  }
+  /* Home */
+  if(e.target.closest('#browseBtn')){openExplorer();return}
+  const qc=e.target.closest('.qchip');
+  if(qc){openExplorer({q:qc.dataset.q});return}
+  const pl=e.target.closest('.pill');
+  if(pl){openExplorer({tool:pl.dataset.tool});return}
+  /* Pagina comandi */
   const n=e.target.closest('.nav');
   if(n){
     sel={tool:n.dataset.t||null,cat:n.dataset.c||null};
-    page=1;renderNav();updateChrome();refresh(true);return;
+    page=1;renderNav();refresh(true);return;
   }
-  const pl=e.target.closest('.pill');
-  if(pl){sel={tool:pl.dataset.tool,cat:null};page=1;renderNav();updateChrome();refresh(true);return}
-  const qc=e.target.closest('.qchip');
-  if(qc){$('#q').value=qc.dataset.q;page=1;updateChrome();refresh(true);return}
   const pb=e.target.closest('.page-btn');
   if(pb){if(!pb.disabled){page=parseInt(pb.dataset.page,10);refresh(true)}return}
   const i=e.target.closest('[data-id]');
@@ -398,21 +515,32 @@ document.addEventListener('click',e=>{
   if(c){copyText(c.dataset.copy);flash(c,'Copied ✓')}
 });
 
+$('#heroSearch').addEventListener('submit',e=>{
+  e.preventDefault();
+  const q=$('#hq').value.trim();
+  $('#hq').value='';
+  openExplorer({q});
+});
+
 $('#themeToggle').addEventListener('click',()=>
-  setTheme(document.documentElement.classList.contains('light')?'dark':'light'));
+  setTheme(root.classList.contains('light')?'dark':'light'));
 
 $('#q').addEventListener('input',()=>{
   clearTimeout(timer);
-  page=1;updateChrome();                   // nuova ricerca/svuotamento: pagina 1
+  page=1;
   timer=setTimeout(()=>refresh(true),250);
 });
 
 document.addEventListener('keydown',e=>{
-  const q=$('#q');
-  if(e.key==='/'&&document.activeElement!==q){e.preventDefault();q.focus();return}
-  if(e.key==='Escape'&&document.activeElement===q&&q.value){q.value='';page=1;updateChrome();refresh(true);return}
+  const q=$('#q'), hq=$('#hq'), target=isHome()?hq:q;
+  if(e.key==='/'&&document.activeElement!==target&&!e.target.matches('input,textarea')){e.preventDefault();target.focus();return}
+  if(e.key==='Escape'&&document.activeElement===q&&q.value){q.value='';page=1;refresh(true);return}
+  if(e.key==='Escape'&&document.activeElement===hq&&hq.value){hq.value='';return}
   if((e.key==='Enter'||e.key===' ')&&e.target.matches&&e.target.matches('.card,.chip')){e.preventDefault();e.target.click()}
 });
+
+window.addEventListener('popstate',route);
+window.addEventListener('hashchange',route);
 
 /* ---------------- Init ---------------- */
 (async()=>{
@@ -421,10 +549,10 @@ document.addEventListener('keydown',e=>{
     tools=await get('/api/tools');
     renderNav();renderHero();
     await refresh();
-    if(location.hash.length>1)show(decodeURIComponent(location.hash.slice(1)));
   }catch(e){
     $('#list').innerHTML=`<div class="empty">${esc(e.message)}</div>`;
   }
+  route();                                 // Home se non c'è hash, altrimenti pagina comandi (+ comando)
 })();
 </script>
 </body>
