@@ -111,23 +111,20 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
-      # <-- NUOVO: avvisa n8n (che chiede conferma su Telegram e poi deploya).
-      # Non gira sulle PR e non fa fallire la pipeline se n8n è irraggiungibile.
       - name: Notify n8n
         if: github.event_name != 'pull_request'
         continue-on-error: true
         env:
           N8N_URL: ${{ secrets.N8N_WEBHOOK_URL }}
           N8N_TOKEN: ${{ secrets.N8N_WEBHOOK_TOKEN }}
+          CF_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}          # <-- NUOVO
+          CF_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}  # <-- NUOVO
           STACK: devops-wiki
           IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/devops-wiki
           DIGEST: ${{ steps.build.outputs.digest }}
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
         run: |
-          # Si deploya sempre un tag immutabile, mai "latest":
-          #   tag v1.2.3   -> 1.2.3
-          #   push su main -> sha-abc1234
           if [ "$REF_TYPE" = "tag" ]; then
             TAG="${REF_NAME#v}"
           else
@@ -144,7 +141,17 @@ jobs:
             --arg commit "$GITHUB_SHA" \
             --arg run    "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
             '{stack:$stack,image:$image,tag:$tag,digest:$digest,source:$source,ref:$ref,commit:$commit,run_url:$run}' \
-          | curl -fsS --retry 3 -X POST "$N8N_URL" \
-              -H "Authorization: Bearer $N8N_TOKEN" \
-              -H "Content-Type: application/json" \
-              -d @-
+            > /tmp/payload.json
+
+          code=$(curl -sS --retry 3 -o /tmp/resp.txt -w '%{http_code}' -X POST "$N8N_URL" \
+            -H "CF-Access-Client-Id: $CF_ID" \
+            -H "CF-Access-Client-Secret: $CF_SECRET" \
+            -H "Authorization: Bearer $N8N_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d @/tmp/payload.json)
+
+          echo "n8n ha risposto HTTP $code"
+          case "$code" in
+            2??) ;;
+            *) cat /tmp/resp.txt; exit 1 ;;
+          esac
