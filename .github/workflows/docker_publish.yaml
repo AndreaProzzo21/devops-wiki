@@ -11,7 +11,7 @@ on:
       - app/**
       - data/**
       - static/**
-      - tests/**          # <-- Aggiunto per triggerare la pipeline se si modificano i test
+      - tests/**
       - .github/workflows/docker-publish.yml
   pull_request:
     branches: [main]      # sulle PR si builda soltanto, senza pubblicare
@@ -46,7 +46,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11" # Assicurati che sia la tua versione
+          python-version: "3.11"
           cache: 'pip'
 
       - name: Install dependencies
@@ -99,6 +99,7 @@ jobs:
 
       # Il Dockerfile valida il dataset YAML durante la build: un YAML rotto fa fallire la pipeline
       - name: Build and push
+        id: build         # <-- NUOVO: serve per leggere il digest nello step finale
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -109,3 +110,41 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      # <-- NUOVO: avvisa n8n (che chiede conferma su Telegram e poi deploya).
+      # Non gira sulle PR e non fa fallire la pipeline se n8n è irraggiungibile.
+      - name: Notify n8n
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        env:
+          N8N_URL: ${{ secrets.N8N_WEBHOOK_URL }}
+          N8N_TOKEN: ${{ secrets.N8N_WEBHOOK_TOKEN }}
+          STACK: devops-wiki
+          IMAGE: ${{ vars.DOCKERHUB_USERNAME }}/devops-wiki
+          DIGEST: ${{ steps.build.outputs.digest }}
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          # Si deploya sempre un tag immutabile, mai "latest":
+          #   tag v1.2.3   -> 1.2.3
+          #   push su main -> sha-abc1234
+          if [ "$REF_TYPE" = "tag" ]; then
+            TAG="${REF_NAME#v}"
+          else
+            TAG="sha-${GITHUB_SHA::7}"
+          fi
+
+          jq -n \
+            --arg stack  "$STACK" \
+            --arg image  "$IMAGE" \
+            --arg tag    "$TAG" \
+            --arg digest "$DIGEST" \
+            --arg source "$GITHUB_REPOSITORY" \
+            --arg ref    "$GITHUB_REF" \
+            --arg commit "$GITHUB_SHA" \
+            --arg run    "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" \
+            '{stack:$stack,image:$image,tag:$tag,digest:$digest,source:$source,ref:$ref,commit:$commit,run_url:$run}' \
+          | curl -fsS --retry 3 -X POST "$N8N_URL" \
+              -H "Authorization: Bearer $N8N_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d @-
