@@ -111,6 +111,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      # Notifica su Telegram: solo un messaggio, nessun bottone, nessun webhook.
       - name: Notify Telegram
         if: github.event_name != 'pull_request'
         continue-on-error: true
@@ -121,12 +122,8 @@ jobs:
           REF_TYPE: ${{ github.ref_type }}
           REF_NAME: ${{ github.ref_name }}
         run: |
-          # Toglie spazi e a capo che si infilano quando si incolla un secret
           TG_TOKEN="$(printf '%s' "$TG_TOKEN" | tr -d '[:space:]')"
           TG_CHAT="$(printf '%s' "$TG_CHAT" | tr -d '[:space:]')"
-
-          # Diagnostica senza stampare i valori
-          echo "Lunghezza token: ${#TG_TOKEN} | chat id: ${#TG_CHAT}"
           [ -n "$TG_TOKEN" ] && [ -n "$TG_CHAT" ] || { echo "Secret Telegram mancanti"; exit 1; }
 
           if [ "$REF_TYPE" = "tag" ]; then
@@ -136,18 +133,10 @@ jobs:
           fi
           RUN_URL="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
 
-          jq -n \
-            --arg chat "$TG_CHAT" \
-            --arg text "🚀 Nuova versione di $STACK disponibile
-          Tag: $TAG
-          Build: $RUN_URL" \
-            --arg yes "d:$STACK:$TAG" \
-            --arg no  "n:$STACK:$TAG" \
-            '{chat_id:$chat, text:$text,
-              link_preview_options:{is_disabled:true},
-              reply_markup:{inline_keyboard:[[
-                {text:"✅ Deploy", callback_data:$yes},
-                {text:"❌ Salta",  callback_data:$no}]]}}' \
+          TEXT="$(printf '🚀 Nuova versione di %s disponibile\nTag: %s\nBuild: %s' "$STACK" "$TAG" "$RUN_URL")"
+
+          jq -n --arg chat "$TG_CHAT" --arg text "$TEXT" \
+            '{chat_id:$chat, text:$text, link_preview_options:{is_disabled:true}}' \
             > /tmp/tg.json
 
           code=$(curl -sS -o /tmp/tg_resp.json -w '%{http_code}' -X POST \
